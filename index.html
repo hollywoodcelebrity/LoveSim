@@ -40,7 +40,7 @@
             }
             .game-stage.active { display: flex; }
 
-            /* --- STAGE 1 STYLES (Interactive Rhythm String) --- */
+            /* --- STAGE 1 STYLES (SVG Interactive Wave) --- */
             #profiles-container {
                 display: flex; justify-content: space-between; 
                 width: 90vw; 
@@ -50,7 +50,7 @@
             }
             .profile-wrapper {
                 position: relative;
-                width: 35vw; 
+                width: 35vw; /* Smaller profile to make room for the wave */
                 height: 70vh;    
                 margin: 0; 
                 filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
@@ -59,68 +59,40 @@
                 width: 100%; height: 100%; object-fit: contain; 
             }
             
-            /* --- RHYTHM STRING STYLES --- */
-            #rhythm-string-container {
+            /* --- RHYTHM STRING STYLES (SVG Wave) --- */
+            #rhythm-string-svg {
                 position: relative;
-                width: 20vw; /* Width of the string path */
-                height: 10px; /* Increased height to give the wave room to vibrate */
+                width: 20vw;      /* Width of the drawing area between heads */
+                height: 100px;    /* Increased height for vertical vibration room */
                 align-self: center; 
-                margin-bottom: 20vh; /* Lift the string up */
-                overflow: hidden;
-                /* Optional: Draw the static center line in the background */
-                background: repeating-linear-gradient(
-                    90deg, 
-                    #555, 
-                    #555 1px, 
-                    #333 1px, 
-                    #333 4px
-                ); /* Creates a subtle dotted/dashed center line */
+                margin-bottom: 20vh;
+                overflow: visible;
+                border-bottom: 1px solid #555; /* Static center line */
             }
 
-            /* Base animation for the wave ripple effect */
+            /* Base animation for the wave ripple effect (vertical vibration) */
             @keyframes wave-ripple {
                 0% { transform: translateY(0px); }
                 50% { transform: translateY(2px); } /* Vibrate up */
                 100% { transform: translateY(0px); }
             }
 
-            /* Target Pulse Animation (The infinite beat) */
-            @keyframes target-pulse {
-                0% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
-                49% { left: 0%; opacity: 1; transform: scaleX(1); } /* Peak hits center just before 50% */
-                50% { left: 0%; opacity: 1; transform: scaleX(1); } /* Hold peak for crash */
-                100% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
+            /* Base style for both waves */
+            #target-wave, #player-wave {
+                transition: transform 0.05s ease-out, stroke-width 0.1s; 
+                filter: drop-shadow(0 0 2px currentColor); 
             }
 
+            /* Target Wave: Continuous vibration */
             #target-wave {
-                position: absolute;
-                top: 3px; /* Position slightly off the center line */
-                width: 100%;
-                height: 4px;
-                background-color: #ff477e; /* Target Red */
-                animation: 
-                    target-pulse 2s linear infinite, /* Main travel animation */
-                    wave-ripple 0.05s linear infinite alternate; /* High-frequency vibration */
-                transform-origin: right;
+                transform-origin: center;
+                animation: wave-ripple 0.05s linear infinite alternate; /* Constant high-frequency vibration */
             }
 
-            /* Player Response Animation (The crash effect) */
-            @keyframes player-crash {
-                0% { right: 100%; opacity: 0.8; transform: scaleX(0.1); }
-                10% { right: 0%; opacity: 1; transform: scaleX(1); } 
-                100% { right: 0%; opacity: 0; transform: scaleX(0); } 
-            }
-
+            /* Player Wave: Vibration triggered only on click */
             #player-wave {
-                position: absolute;
-                top: 3px; /* Position slightly off the center line */
-                width: 100%;
-                height: 4px;
-                background-color: #00ffc8; /* Player Cyan */
-                transform-origin: left;
-                opacity: 0; /* Start hidden */
+                transform-origin: center;
             }
-
 
             /* Player Feedback Flash */
             @keyframes playerFlash {
@@ -209,16 +181,16 @@
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Click anywhere with your mouse to match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
+                        <p>Click anywhere to match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
                             </div>
                             
-                            <div id="rhythm-string-container"> 
-                                <div id="target-wave"></div>
-                                <div id="player-wave"></div>
-                            </div>
+                            <svg id="rhythm-string-svg" viewBox="0 0 100 10" preserveAspectRatio="none">
+                                <path id="target-wave" d="M 100 5 L 0 5" stroke="#ff477e" stroke-width="0.3" fill="none" opacity="0.8"/>
+                                <path id="player-wave" d="M 0 5 L 100 5" stroke="#00ffc8" stroke-width="0.3" fill="none" opacity="0"/>
+                            </svg>
                             
                             <div class="profile-wrapper target" id="target-profile">
                                 <img src="target_profile.png" alt="Target Profile" class="profile-image">
@@ -247,23 +219,39 @@
                     const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
                     const playerProfile = document.getElementById('player-profile');
                     const playerWave = document.getElementById('player-wave');
+                    const targetWave = document.getElementById('target-wave');
                     const syncMessage = document.getElementById('sync-message');
 
-                    // 1. Player Feedback: Apply profile flash and wave crash animation
+                    // 1. Player Feedback: Apply profile flash
                     playerProfile.classList.add('flash');
                     setTimeout(() => {
                         playerProfile.classList.remove('flash');
                     }, 200);
                     
-                    // Trigger the player wave animation (crash effect)
-                    playerWave.style.animation = 'none';
-                    playerWave.offsetHeight; // Force reflow
+                    // --- 2. Wave Crash Visualization (SVG Drawing) ---
                     
-                    // NEW: Combine crash animation with continuous high-frequency vibration
-                    playerWave.style.animation = 'player-crash 0.3s ease-out, wave-ripple 0.05s linear infinite alternate'; 
+                    // a) Calculate Crash Strength (A click closer to 0 difference is stronger)
+                    const crashStrength = Math.max(0, 1 - (difference / syncThreshold)); 
+                    const crashHeight = 4 * crashStrength; // Max vertical amplitude of 4
+                    
+                    // b) Animate the Player Wave (temporary visibility and crash)
+                    // Draw a quick wave path from left (0) to right (100) with vertical peaks
+                    // M 0 5 = Move to start (left center)
+                    // C 25 5, 25 (5-H), 50 5 = Curve 1 (peak up) to center
+                    // C 75 (5+H), 75 5, 100 5 = Curve 2 (peak down) to end (right center)
+                    const playerPath = \`M 0 5 C 25 5, 25 \${5 - crashHeight}, 50 5 C 75 \${5 + crashHeight}, 75 5, 100 5\`;
+                    
+                    playerWave.setAttribute('d', playerPath);
+                    playerWave.setAttribute('stroke-width', 0.8 * crashStrength + 0.3); // Thicker line if sync is good
+                    playerWave.setAttribute('opacity', 1);
 
+                    // c) Fade the Player Wave back out
+                    setTimeout(() => {
+                        playerWave.setAttribute('opacity', 0);
+                        playerWave.setAttribute('stroke-width', 0.3);
+                    }, 400);
 
-                    // 2. Synchronization Logic
+                    // 3. Synchronization Logic
                     if (difference <= syncThreshold) {
                         playerClicks.push('synced');
                         syncMessage.textContent = \`✅ SYNCHRONIZED! (\${playerClicks.length} / 5)\`;
@@ -274,7 +262,7 @@
                         syncMessage.style.color = '#ff477e';
                     }
                     
-                    // 3. Win Condition Check
+                    // 4. Win Condition Check
                     if (playerClicks.length >= 5) { 
                         clearInterval(syncBeatTimer);
                         document.removeEventListener('click', handleSyncClick); 
