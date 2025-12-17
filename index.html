@@ -77,6 +77,26 @@
                 100% { transform: translateY(0px); }
             }
 
+            /* Target Pulse Animation (The infinite beat) */
+            @keyframes target-pulse {
+                0% { 
+                    transform: translateX(0) scaleX(1); /* Full width, starts at the target head */
+                    opacity: 0.1;
+                }
+                49% { 
+                    transform: translateX(50%) scaleX(0.05); /* Peak reaches the center (50% translation, almost no width) */
+                    opacity: 1;
+                }
+                51% {
+                    transform: translateX(50%) scaleX(0); /* Pulse disappears immediately after peak */
+                    opacity: 0;
+                }
+                100% {
+                    transform: translateX(0) scaleX(1);
+                    opacity: 0.1;
+                }
+            }
+
             /* Base style for both waves */
             #target-wave, #player-wave {
                 transition: transform 0.05s ease-out, stroke-width 0.1s; 
@@ -86,7 +106,9 @@
             /* Target Wave: Continuous vibration */
             #target-wave {
                 transform-origin: center;
-                animation: wave-ripple 0.05s linear infinite alternate; /* Constant high-frequency vibration */
+                animation: 
+                    target-pulse 2s linear infinite, /* Main traveling pulse */
+                    wave-ripple 0.05s linear infinite alternate; /* Constant high-frequency vibration */
             }
 
             /* Player Wave: Vibration triggered only on click */
@@ -181,15 +203,15 @@
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Click anywhere to match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
+                        <p>Click anywhere with your mouse to match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
                             </div>
                             
                             <svg id="rhythm-string-svg" viewBox="0 0 100 10" preserveAspectRatio="none">
-                                <path id="target-wave" d="M 100 5 L 0 5" stroke="#ff477e" stroke-width="0.3" fill="none" opacity="0.8"/>
-                                <path id="player-wave" d="M 0 5 L 100 5" stroke="#00ffc8" stroke-width="0.3" fill="none" opacity="0"/>
+                                <path id="target-wave" d="M 100 5 S 50 1, 0 5" stroke="#ff477e" stroke-width="0.3" fill="none" opacity="0.8"/>
+                                <path id="player-wave" d="M 0 5 S 50 9, 100 5" stroke="#00ffc8" stroke-width="0.3" fill="none" opacity="0"/>
                             </svg>
                             
                             <div class="profile-wrapper target" id="target-profile">
@@ -219,7 +241,6 @@
                     const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
                     const playerProfile = document.getElementById('player-profile');
                     const playerWave = document.getElementById('player-wave');
-                    const targetWave = document.getElementById('target-wave');
                     const syncMessage = document.getElementById('sync-message');
 
                     // 1. Player Feedback: Apply profile flash
@@ -236,19 +257,22 @@
                     
                     // b) Animate the Player Wave (temporary visibility and crash)
                     // Draw a quick wave path from left (0) to right (100) with vertical peaks
-                    // M 0 5 = Move to start (left center)
-                    // C 25 5, 25 (5-H), 50 5 = Curve 1 (peak up) to center
-                    // C 75 (5+H), 75 5, 100 5 = Curve 2 (peak down) to end (right center)
                     const playerPath = \`M 0 5 C 25 5, 25 \${5 - crashHeight}, 50 5 C 75 \${5 + crashHeight}, 75 5, 100 5\`;
                     
                     playerWave.setAttribute('d', playerPath);
                     playerWave.setAttribute('stroke-width', 0.8 * crashStrength + 0.3); // Thicker line if sync is good
                     playerWave.setAttribute('opacity', 1);
 
-                    // c) Fade the Player Wave back out
+                    // Trigger the wave ripple animation on click for visual crash energy
+                    playerWave.style.animation = 'none';
+                    playerWave.offsetHeight;
+                    playerWave.style.animation = 'wave-ripple 0.05s linear infinite alternate';
+
+                    // c) Fade the Player Wave back out and stop its vibration
                     setTimeout(() => {
                         playerWave.setAttribute('opacity', 0);
                         playerWave.setAttribute('stroke-width', 0.3);
+                        playerWave.style.animation = 'none'; // Stop the vibration
                     }, 400);
 
                     // 3. Synchronization Logic
