@@ -13,498 +13,391 @@
         <div id="stage-3" class="game-stage"></div>
         <div id="conclusion" class="game-stage"></div>
     </div>
-
+    
     <script id="game-script"></script>
 
     <script>
-        // Copy the CSS and JS content into these elements for a single-file test
+        // --- THIS SCRIPT BLOCK IS THE WRAPPER THAT INJECTS CSS/JS ---
         const cssContent = document.getElementById('game-style');
         const jsContent = document.getElementById('game-script');
         
-        // --- PASTE CSS CONTENT BELOW ---
+        // --- INJECTING CSS CONTENT ---
         cssContent.innerHTML = `
-    body {
-    /* Use 100% of viewport height/width */
-    width: 100vw; 
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-    background-color: #111;
-    color: white;
-    font-family: 'Arial', sans-serif;
-    overflow: hidden; 
-    box-sizing: border-box; /* Ensure padding/border doesn't cause overflow */
-}
-#game-container {
-    /* Ensure the container itself fills the screen */
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-.game-stage {
-    display: none;
-    /* Use 100% of the parent container's size */
-    width: 100%;
-    height: 100%; 
-    position: absolute;
-    top: 0;
-    left: 0;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    transition: opacity 0.5s;
-    text-align: center; /* Center text within the stage */
-    padding: 20px;
-    box-sizing: border-box;
-}
-
-.game-stage.active {
-    display: flex;
-}
-
-/* --- STAGE 1 STYLES (Brainwaves) --- */
-/* --- STAGE 1 STYLES (Brainwaves) --- */
-/* --- STAGE 1 STYLES (Image & Brainwaves) --- */
-#profiles-container {
-    display: flex;
-    align-items: flex-end; /* Align the bottom of the heads */
-    margin-bottom: 30px;
-}
-
-.profile-wrapper {
-    position: relative; /* Crucial for positioning the wave inside */
-    width: 250px;      /* Set width appropriate for your PNGs */
-    height: 350px;     /* Set height appropriate for your PNGs */
-    margin: 0 15px;
-}
-
-.profile-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; /* Ensures image fits without being cropped */
-}
-
-/* 1. ANIMATION KEYFRAMES (Keep the enhanced version) */
-@keyframes brainPulse {
-    0% { 
-        transform: scaleY(0.5); 
-        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
-    }
-    50% { 
-        transform: scaleY(2.5); /* PEAK */
-        box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
-    }
-    100% { 
-        transform: scaleY(0.5); 
-        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
-    }
-}
-
-/* 2. WAVE STYLING AND PLACEMENT */
-.brain-wave {
-    position: absolute;
-    /* You will likely need to adjust these top/left/width values 
-       to precisely cover the brain area in your specific PNGs. */
-    top: 20%;     /* Start point (e.g., 20% down from the top of the image) */
-    left: 10%;    /* Start point (e.g., 10% from the edge) */
-    width: 70%;   /* Width of the wave path across the brain */
-    height: 3px;  /* Thickness of the wave line */
-    
-    background-color: #ff477e; /* Target color: Red */
-    transform-origin: center;
-    /* Assuming 40 BPM (1.5s duration) */
-    animation: brainPulse 2s linear infinite; 
-}
-
-/* 3. PLAYER FEEDBACK (Flash on click) */
-@keyframes playerFlash {
-    0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-    50% { box-shadow: 0 0 20px 5px #00ffc8; } /* Bright glow */
-    100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-}
-
-#player-profile.flash {
-    animation: playerFlash 0.2s ease-out; 
-}
-#pulse-button {
-    padding: 15px 30px;
-    font-size: 1.2em;
-    cursor: pointer;
-    background-color: #ff477e;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    margin-top: 30px;
-    transition: background-color 0.2s;
-}
-#pulse-button:active {
-    background-color: #cc3760;
-}
-#sync-message {
-    font-size: 1.5em;
-    margin-top: 20px;
-}
-
-/* --- STAGE 2 STYLES (Microbiota) --- */
-.kiss-scene {
-    width: 400px;
-    max-width: 90%; 
-    height: 250px;
-    border: 3px solid #ffd700;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    background: linear-gradient(to right, #444, #222);
-    border-radius: 10px;
-}
-#zoom-bullseye {
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    background: radial-gradient(#ff0000, #ff8c00);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    cursor: pointer;
-    animation: pulse 1s infinite alternate;
-}
-@keyframes pulse {
-    from { transform: scale(1); opacity: 0.8; }
-    to { transform: scale(1.05); opacity: 1; }
-}
-#microbe-container {
-    width: 80%;
-    max-width: 600px; 
-    aspect-ratio: 16 / 9; 
-    border: 2px solid #5a5a5a;
-    position: relative;
-    background-color: #000033; 
-    margin-top: 20px;
-}
-.microbe {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    position: absolute;
-    cursor: grab; /* Added cursor for drag */
-    transition: background-color 0.5s; /* Added transition */
-    opacity: 0.9; /* Added opacity */
-}
-.microbe.red { background-color: #ff6347; }
-.microbe.blue { background-color: #4682b4; }
-
-/* --- STAGE 3 STYLES (Heat & Oxytocin) --- */
-#heat-profiles {
-    width: 400px;
-    height: 250px;
-    max-width: 90%;
-    position: relative;
-    /* This inline SVG image data simulates the profiles */
-    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><path d="M5 45 Q20 25 50 40 Q80 25 95 45 L90 50 L10 50 Z" fill="%23ccc"/><circle cx="20" cy="30" r="5" fill="%23666"/><circle cx="80" cy="30" r="5" fill="%23666"/></svg>') no-repeat center center / contain;
-    box-shadow: 0 0 30px rgba(255, 69, 0, 0); 
-    transition: box-shadow 0.3s;
-}
-.heating {
-    box-shadow: 0 0 30px rgba(255, 69, 0, 0.5); 
-}
-.heat-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 69, 0, 0); 
-    transition: background-color 0.3s;
-}
-.oxytocin-brain {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 30px;
-    border: 2px dashed #42f5b6;
-}
-#oxytocin-input {
-    padding: 10px;
-    margin: 10px 0;
-    font-size: 1.1em;
-    width: 300px;
-    text-align: center;
-}
-#release-button {
-    padding: 10px 20px;
-    font-size: 1.5em;
-    background-color: #42f5b6;
-    color: #111;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.3s;
-}
-#release-button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-        `;
-
-// --- PASTE JAVASCRIPT CONTENT BELOW ---
-  document.addEventListener('DOMContentLoaded', () => {
-    const stage1 = document.getElementById('stage-1');
-    const stage2 = document.getElementById('stage-2');
-    const stage3 = document.getElementById('stage-3');
-    const conclusion = document.getElementById('conclusion');
-    // const bassPulse = document.getElementById('bass-pulse'); // Uncomment if using audio
-
-    // --- STAGE 1: Match Brainwaves ---
-    // Note: You set BPM to 30 here, but the description says 40. I kept it at 30 (2s per beat).
-    const targetBPM = 30; // 30 beats per minute
-    const targetInterval = 60000 / targetBPM; // 2000 ms per beat (2 seconds)
-    let playerClicks = [];
-    const syncThreshold = 150; // Max ms difference to be considered "synced"
-    let lastTargetBeat = performance.now();
-
-    function initStage1() {
-       // ESCAPED BACKTICKS HERE:
-       stage1.innerHTML = \`
-            <h2>Stage 1: Neural Synchronization</h2>
-            <p>Match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
-            <div id="profiles-container">
-                <div class="profile-wrapper" id="player-profile">
-                    <img src="player_profile.png" alt="Player Profile" class="profile-image">
-                </div>
-                <div class="profile-wrapper target" id="target-profile">
-                    <img src="target_profile.png" alt="Target Profile" class="profile-image">
-                    <div class="brain-wave"></div>
-                </div>
-            </div>
-            <button id="pulse-button">CLICK TO SYNC</button>
-            <p id="sync-message">Match the Target BPM</p>
-        \`;
-
-        const pulseButton = document.getElementById('pulse-button');
-        const syncMessage = document.getElementById('sync-message');
-        // if (bassPulse) bassPulse.play(); // Uncomment if using audio
-
-        // Simple timer to update the theoretical last target beat
-        const beatTimer = setInterval(() => {
-            lastTargetBeat = performance.now();
-        }, targetInterval);
-
-        pulseButton.addEventListener('click', () => {
-            const clickTime = performance.now();
-            const timeSinceLastBeat = clickTime % targetInterval;
-            // Distance to the closest target beat
-            const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
-
-            // 1. Player Feedback: Apply flash to the left profile
-            const playerProfile = document.getElementById('player-profile');
-            playerProfile.classList.add('flash');
-            setTimeout(() => {
-                playerProfile.classList.remove('flash');
-            }, 200);
-
-            if (difference <= syncThreshold) {
-                playerClicks.push('synced');
-                syncMessage.textContent = \`✅ Synced! (\${playerClicks.length} / 5)\`;
-                pulseButton.style.backgroundColor = '#00ffc8';
-            } else {
-                playerClicks = []; // Reset on missed beat
-                syncMessage.textContent = '❌ Desynced. Try again!';
-                pulseButton.style.backgroundColor = '#ff477e';
+            body {
+                width: 100vw; height: 100vh;
+                display: flex; justify-content: center; align-items: center;
+                margin: 0; background-color: #111; color: white;
+                font-family: 'Arial', sans-serif; overflow: hidden; box-sizing: border-box;
             }
-            
-            setTimeout(() => pulseButton.style.backgroundColor = '#ff477e', 100);
-
-            if (playerClicks.length >= 5) { 
-                clearInterval(beatTimer);
-                syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
-                pulseButton.disabled = true;
-                setTimeout(goToStage2, 1500);
+            #game-container {
+                width: 100%; height: 100%; position: relative;
             }
-        });
-    }
+            .game-stage {
+                display: none; width: 100%; height: 100%; position: absolute;
+                top: 0; left: 0; justify-content: center; align-items: center;
+                flex-direction: column; transition: opacity 0.5s;
+                text-align: center; padding: 20px; box-sizing: border-box;
+            }
+            .game-stage.active { display: flex; }
 
-    function goToStage2() {
-        stage1.classList.remove('active');
-        stage2.classList.add('active');
-        initStage2();
-    }
-
-    // --- STAGE 2: Exchange Microbiota ---
-    function initStage2() {
-        stage2.innerHTML = \`
-            <h2>Stage 2: Microbial Exchange</h2>
-            <p>The profiles approach...</p>
-            <div class="kiss-scene">
-                <div id="zoom-bullseye">ZOOM IN</div>
-            </div>
-        \`;
-
-        document.getElementById('zoom-bullseye').addEventListener('click', renderMicrobeView);
-    }
-
-    function renderMicrobeView() {
-        stage2.innerHTML = \`
-            <h3 style="margin-bottom: 5px;">Mixing Microbiota (Drag and Drop)</h3>
-            <p>Drag the cells from the sides to the middle of the screen to mix them.</p>
-            <div id="microbe-container"></div>
-            <p id="mix-status" style="margin-top: 10px;">Mixed: 0 / 10</p>
-        \`;
-
-        const microbeContainer = document.getElementById('microbe-container');
-        const mixStatus = document.getElementById('mix-status');
-        let mixedCount = 0;
-        const requiredMix = 10;
-        let microbes = [];
-
-        for (let i = 0; i < 20; i++) {
-            const microbe = document.createElement('div');
-            microbe.className = 'microbe ' + (i < 10 ? 'red' : 'blue');
-            microbe.id = 'microbe-' + i;
-            microbe.draggable = true;
-            
-            // Initial random position on their respective side
-            const x = i < 10 ? Math.random() * 20 + 5 : Math.random() * 20 + 75; // 5-25% or 75-95%
-            const y = Math.random() * 90;
-            microbe.style.left = \`\${x}%\`;
-            microbe.style.top = \`\${y}%\`;
-            microbe.isMixed = false;
-            microbes.push(microbe);
-            microbeContainer.appendChild(microbe);
-
-            // Basic Drag-and-Drop implementation
-            microbe.ondragstart = (e) => {
-                e.dataTransfer.setData("text/plain", e.target.id);
-            };
-        }
-        
-        microbeContainer.ondragover = (e) => e.preventDefault();
-        microbeContainer.ondrop = (e) => {
-            e.preventDefault();
-            const id = e.dataTransfer.getData("text/plain");
-            const draggedMicrobe = document.getElementById(id);
-            const containerRect = microbeContainer.getBoundingClientRect();
-
-            // Calculate new position relative to the container
-            const newX = e.clientX - containerRect.left - (draggedMicrobe.offsetWidth / 2);
-            const newY = e.clientY - containerRect.top - (draggedMicrobe.offsetHeight / 2);
-
-            draggedMicrobe.style.left = \`\${newX}px\`;
-            draggedMicrobe.style.top = \`\${newY}px\`;
-
-            // Check if dropped near the center (The mixing zone)
-            const centerX = containerRect.width / 2;
-            const tolerance = containerRect.width / 4; 
-
-            if (newX > centerX - tolerance && newX < centerX + tolerance && !draggedMicrobe.isMixed) {
-                draggedMicrobe.style.backgroundColor = 'purple'; // Show mixing
-                draggedMicrobe.isMixed = true;
-                mixedCount++;
-                mixStatus.textContent = \`Mixed: \${mixedCount} / \${requiredMix}\`;
+            /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
+            #profiles-container {
+                display: flex; align-items: flex-end; margin-bottom: 30px;
+            }
+            .profile-wrapper {
+                position: relative; 
+                width: 250px; 
+                height: 350px; 
+                margin: 0 15px;
+            }
+            .profile-image {
+                width: 100%; height: 100%; object-fit: contain;
             }
 
-            if (mixedCount >= requiredMix) {
-                mixStatus.textContent = '🦠 Microbiota successfully exchanged! Commencing Stage 3...';
-                setTimeout(goToStage3, 1500);
-            }
-        };
-    }
-
-    function goToStage3() {
-        stage2.classList.remove('active');
-        stage3.classList.add('active');
-        initStage3();
-    }
-
-    // --- STAGE 3: Heat and Oxytocin ---
-    let heatPresses = 0;
-    const requiredHeatPresses = 30;
-
-    function initStage3() {
-        stage3.innerHTML = \`
-            <h2>Stage 3: Hormonal Release (Vasodilation)</h2>
-            <p>Initiate the physiological response...</p>
-            <div id="heat-profiles"><div class="heat-overlay" id="heat-overlay"></div></div>
-            <p style="margin-top: 20px;">Press **SPACE BAR** repeatedly to heat up!</p>
-            <p id="heat-level">Heat: 0%</p>
-        \`;
-
-        document.addEventListener('keydown', handleSpaceBar);
-    }
-
-    function handleSpaceBar(e) {
-        if (stage3.classList.contains('active') && e.code === 'Space') {
-            heatPresses++;
-            const heatPercent = Math.min(100, (heatPresses / requiredHeatPresses) * 100);
-            document.getElementById('heat-level').textContent = \`Heat: \${Math.round(heatPercent)}%\`;
-            
-            const heatProfiles = document.getElementById('heat-profiles');
-            const heatOverlay = document.getElementById('heat-overlay');
-            
-            // Increase visual heat effect
-            heatProfiles.classList.add('heating');
-            heatProfiles.style.boxShadow = \`0 0 30px rgba(255, 69, 0, \${heatPercent / 100 * 0.5 + 0.1})\`;
-            heatOverlay.style.backgroundColor = \`rgba(255, 69, 0, \${heatPercent / 100 * 0.5})\`;
-
-            if (heatPresses >= requiredHeatPresses) {
-                document.removeEventListener('keydown', handleSpaceBar);
-                goToOxytocinPhase();
-            }
-        }
-    }
-
-    function goToOxytocinPhase() {
-        const oxytocinFormula = 'C43H66N12O12S2'; 
-        let copiesMade = 0;
-        const requiredCopies = 3;
-
-        stage3.innerHTML = \`
-            <h3 style="margin-bottom: 5px;">Hormonal Synthesis: Oxytocin</h3>
-            <div class="oxytocin-brain">
-                <p>Copy the Oxytocin chemical structure (required for release):</p>
-                <p><strong>\${oxytocinFormula}</strong></p>
-                <input type="text" id="oxytocin-input" placeholder="Paste the formula here">
-                <p id="copy-status">Copies made: 0 / \${requiredCopies}</p>
-                <button id="release-button" disabled>RELEASE</button>
-            </div>
-        \`;
-
-        const oxytocinInput = document.getElementById('oxytocin-input');
-        const copyStatus = document.getElementById('copy-status');
-        const releaseButton = document.getElementById('release-button');
-        
-        oxytocinInput.focus(); // Focus for quick input
-
-        oxytocinInput.addEventListener('input', (e) => {
-            if (e.target.value.toUpperCase() === oxytocinFormula.toUpperCase()) {
-                e.target.value = ''; // Clear for next copy
-                copiesMade++;
-                copyStatus.textContent = \`Copies made: \${copiesMade} / \${requiredCopies}\`;
-                
-                if (copiesMade >= requiredCopies) {
-                    releaseButton.disabled = false;
-                    releaseButton.style.backgroundColor = '#ff477e';
+            /* 1. ANIMATION KEYFRAMES */
+            @keyframes brainPulse {
+                0% { 
+                    transform: scaleY(0.5); 
+                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
+                }
+                50% { 
+                    transform: scaleY(2.5); /* PEAK */
+                    box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
+                }
+                100% { 
+                    transform: scaleY(0.5); 
+                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
                 }
             }
-        });
 
-        releaseButton.addEventListener('click', () => {
-            // Final transition
-            stage3.classList.remove('active');
-            conclusion.classList.add('active');
-            conclusion.innerHTML = '<h1>💕 CONGRATS! OXYTOCIN RELEASED! YOU ARE IN LOVE! 💕</h1>';
-        });
-    }
-    
-    // Start the game
-    initStage1();
-});
-`;
+            /* 2. WAVE STYLING AND PLACEMENT */
+            .brain-wave {
+                position: absolute;
+                top: 20%; 
+                left: 10%; 
+                width: 70%; 
+                height: 3px; 
+                background-color: #ff477e;
+                transform-origin: center;
+                animation: brainPulse 2s linear infinite; /* MATCHES 30 BPM (2s) */
+            }
+
+            /* 3. PLAYER FEEDBACK (Flash on click) */
+            @keyframes playerFlash {
+                0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+                50% { box-shadow: 0 0 20px 5px #00ffc8; } 
+                100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+            }
+            #player-profile.flash { animation: playerFlash 0.2s ease-out; }
+            
+            /* --- GENERAL BUTTONS/MESSAGE STYLES --- */
+            #pulse-button {
+                padding: 15px 30px; font-size: 1.2em; cursor: pointer;
+                background-color: #ff477e; color: white; border: none;
+                border-radius: 8px; margin-top: 30px; transition: background-color 0.2s;
+            }
+            #pulse-button:active { background-color: #cc3760; }
+            #sync-message { font-size: 1.5em; margin-top: 20px; }
+
+            /* --- STAGE 2 STYLES (Microbiota) --- */
+            .kiss-scene {
+                width: 400px; max-width: 90%; height: 250px; border: 3px solid #ffd700;
+                display: flex; justify-content: center; align-items: center;
+                position: relative; background: linear-gradient(to right, #444, #222);
+                border-radius: 10px;
+            }
+            #zoom-bullseye {
+                position: absolute; width: 100px; height: 100px; border-radius: 50%;
+                background: radial-gradient(#ff0000, #ff8c00); display: flex;
+                justify-content: center; align-items: center; font-weight: bold;
+                cursor: pointer; animation: pulse 1s infinite alternate;
+            }
+            @keyframes pulse {
+                from { transform: scale(1); opacity: 0.8; }
+                to { transform: scale(1.05); opacity: 1; }
+            }
+            #microbe-container {
+                width: 80%; max-width: 600px; aspect-ratio: 16 / 9; 
+                border: 2px solid #5a5a5a; position: relative; background-color: #000033; 
+                margin-top: 20px;
+            }
+            .microbe {
+                width: 20px; height: 20px; border-radius: 50%; position: absolute;
+                cursor: grab; transition: background-color 0.5s; opacity: 0.9;
+            }
+            .microbe.red { background-color: #ff6347; }
+            .microbe.blue { background-color: #4682b4; }
+
+            /* --- STAGE 3 STYLES (Heat & Oxytocin) --- */
+            #heat-profiles {
+                width: 400px; height: 250px; max-width: 90%; position: relative;
+                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 50"><path d="M5 45 Q20 25 50 40 Q80 25 95 45 L90 50 L10 50 Z" fill="%23ccc"/><circle cx="20" cy="30" r="5" fill="%23666"/><circle cx="80" cy="30" r="5" fill="%23666"/></svg>') no-repeat center center / contain;
+                box-shadow: 0 0 30px rgba(255, 69, 0, 0); transition: box-shadow 0.3s;
+            }
+            .heating { box-shadow: 0 0 30px rgba(255, 69, 0, 0.5); }
+            .heat-overlay {
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+                background-color: rgba(255, 69, 0, 0); transition: background-color 0.3s;
+            }
+            .oxytocin-brain {
+                display: flex; flex-direction: column; align-items: center;
+                text-align: center; padding: 30px; border: 2px dashed #42f5b6;
+            }
+            #oxytocin-input {
+                padding: 10px; margin: 10px 0; font-size: 1.1em;
+                width: 300px; text-align: center;
+            }
+            #release-button {
+                padding: 10px 20px; font-size: 1.5em; background-color: #42f5b6;
+                color: #111; border: none; cursor: pointer; transition: opacity 0.3s;
+            }
+            #release-button:disabled { opacity: 0.5; cursor: not-allowed; }
+        `;
+
+        // --- INJECTING JAVASCRIPT CONTENT ---
+        jsContent.innerHTML = `
+            document.addEventListener('DOMContentLoaded', () => {
+                const stage1 = document.getElementById('stage-1');
+                const stage2 = document.getElementById('stage-2');
+                const stage3 = document.getElementById('stage-3');
+                const conclusion = document.getElementById('conclusion');
+                // const bassPulse = document.getElementById('bass-pulse');
+
+                // --- STAGE 1: Match Brainwaves ---
+                const targetBPM = 30; // 30 beats per minute
+                const targetInterval = 60000 / targetBPM; // 2000 ms per beat (2 seconds)
+                let playerClicks = [];
+                const syncThreshold = 250; // Increased tolerance for easier sync
+                let lastTargetBeat = performance.now();
+
+                function initStage1() {
+                    stage1.innerHTML = \`
+                        <h2>Stage 1: Neural Synchronization</h2>
+                        <p>Match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
+                        <div id="profiles-container">
+                            <div class="profile-wrapper" id="player-profile">
+                                <img src="player_profile.png" alt="Player Profile" class="profile-image">
+                            </div>
+                            <div class="profile-wrapper target" id="target-profile">
+                                <img src="target_profile.png" alt="Target Profile" class="profile-image">
+                                <div class="brain-wave"></div>
+                            </div>
+                        </div>
+                        <button id="pulse-button">CLICK TO SYNC</button>
+                        <p id="sync-message">Match the Target BPM</p>
+                    \`;
+
+                    const pulseButton = document.getElementById('pulse-button');
+                    const syncMessage = document.getElementById('sync-message');
+                    // if (bassPulse) bassPulse.play();
+
+                    const beatTimer = setInterval(() => {
+                        lastTargetBeat = performance.now();
+                    }, targetInterval);
+
+                    pulseButton.addEventListener('click', () => {
+                        const clickTime = performance.now();
+                        const timeSinceLastBeat = clickTime % targetInterval;
+                        const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+
+                        // 1. Player Feedback: Apply flash to the left profile
+                        const playerProfile = document.getElementById('player-profile');
+                        playerProfile.classList.add('flash');
+                        setTimeout(() => {
+                            playerProfile.classList.remove('flash');
+                        }, 200);
+
+                        if (difference <= syncThreshold) {
+                            playerClicks.push('synced');
+                            syncMessage.textContent = \`✅ Synced! (\${playerClicks.length} / 5)\`;
+                            pulseButton.style.backgroundColor = '#00ffc8';
+                        } else {
+                            playerClicks = []; 
+                            syncMessage.textContent = '❌ Desynced. Try again!';
+                            pulseButton.style.backgroundColor = '#ff477e';
+                        }
+                        
+                        setTimeout(() => pulseButton.style.backgroundColor = '#ff477e', 100);
+
+                        if (playerClicks.length >= 5) { 
+                            clearInterval(beatTimer);
+                            syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
+                            pulseButton.disabled = true;
+                            setTimeout(goToStage2, 1500);
+                        }
+                    });
+                }
+
+                function goToStage2() {
+                    stage1.classList.remove('active');
+                    stage2.classList.add('active');
+                    // if (bassPulse) bassPulse.pause();
+                    initStage2();
+                }
+
+                // --- STAGE 2: Exchange Microbiota ---
+                function initStage2() {
+                    stage2.innerHTML = \`
+                        <h2>Stage 2: Microbial Exchange</h2>
+                        <p>The profiles approach...</p>
+                        <div class="kiss-scene">
+                            <div id="zoom-bullseye">ZOOM IN</div>
+                        </div>
+                    \`;
+
+                    document.getElementById('zoom-bullseye').addEventListener('click', renderMicrobeView);
+                }
+
+                function renderMicrobeView() {
+                    stage2.innerHTML = \`
+                        <h3 style="margin-bottom: 5px;">Mixing Microbiota (Drag and Drop)</h3>
+                        <p>Drag the cells from the sides to the middle of the screen to mix them.</p>
+                        <div id="microbe-container"></div>
+                        <p id="mix-status" style="margin-top: 10px;">Mixed: 0 / 10</p>
+                    \`;
+
+                    const microbeContainer = document.getElementById('microbe-container');
+                    const mixStatus = document.getElementById('mix-status');
+                    let mixedCount = 0;
+                    const requiredMix = 10;
+                    let microbes = [];
+
+                    for (let i = 0; i < 20; i++) {
+                        const microbe = document.createElement('div');
+                        microbe.className = 'microbe ' + (i < 10 ? 'red' : 'blue');
+                        microbe.id = 'microbe-' + i;
+                        microbe.draggable = true;
+                        
+                        const x = i < 10 ? Math.random() * 20 + 5 : Math.random() * 20 + 75; 
+                        const y = Math.random() * 90;
+                        microbe.style.left = \`\${x}%\`;
+                        microbe.style.top = \`\${y}%\`;
+                        microbe.isMixed = false;
+                        microbes.push(microbe);
+                        microbeContainer.appendChild(microbe);
+
+                        microbe.ondragstart = (e) => {
+                            e.dataTransfer.setData("text/plain", e.target.id);
+                        };
+                    }
+                    
+                    microbeContainer.ondragover = (e) => e.preventDefault();
+                    microbeContainer.ondrop = (e) => {
+                        e.preventDefault();
+                        const id = e.dataTransfer.getData("text/plain");
+                        const draggedMicrobe = document.getElementById(id);
+                        const containerRect = microbeContainer.getBoundingClientRect();
+
+                        const newX = e.clientX - containerRect.left - (draggedMicrobe.offsetWidth / 2);
+                        const newY = e.clientY - containerRect.top - (draggedMicrobe.offsetHeight / 2);
+
+                        draggedMicrobe.style.left = \`\${newX}px\`;
+                        draggedMicrobe.style.top = \`\${newY}px\`;
+
+                        const centerX = containerRect.width / 2;
+                        const tolerance = containerRect.width / 4; 
+
+                        if (newX > centerX - tolerance && newX < centerX + tolerance && !draggedMicrobe.isMixed) {
+                            draggedMicrobe.style.backgroundColor = 'purple';
+                            draggedMicrobe.isMixed = true;
+                            mixedCount++;
+                            mixStatus.textContent = \`Mixed: \${mixedCount} / \${requiredMix}\`;
+                        }
+
+                        if (mixedCount >= requiredMix) {
+                            mixStatus.textContent = '🦠 Microbiota successfully exchanged! Commencing Stage 3...';
+                            setTimeout(goToStage3, 1500);
+                        }
+                    };
+                }
+
+                function goToStage3() {
+                    stage2.classList.remove('active');
+                    stage3.classList.add('active');
+                    initStage3();
+                }
+
+                // --- STAGE 3: Heat and Oxytocin ---
+                let heatPresses = 0;
+                const requiredHeatPresses = 30;
+
+                function initStage3() {
+                    stage3.innerHTML = \`
+                        <h2>Stage 3: Hormonal Release (Vasodilation)</h2>
+                        <p>Initiate the physiological response...</p>
+                        <div id="heat-profiles"><div class="heat-overlay" id="heat-overlay"></div></div>
+                        <p style="margin-top: 20px;">Press **SPACE BAR** repeatedly to heat up!</p>
+                        <p id="heat-level">Heat: 0%</p>
+                    \`;
+
+                    document.addEventListener('keydown', handleSpaceBar);
+                }
+
+                function handleSpaceBar(e) {
+                    if (stage3.classList.contains('active') && e.code === 'Space') {
+                        heatPresses++;
+                        const heatPercent = Math.min(100, (heatPresses / requiredHeatPresses) * 100);
+                        document.getElementById('heat-level').textContent = \`Heat: \${Math.round(heatPercent)}%\`;
+                        
+                        const heatProfiles = document.getElementById('heat-profiles');
+                        const heatOverlay = document.getElementById('heat-overlay');
+                        
+                        heatProfiles.classList.add('heating');
+                        heatProfiles.style.boxShadow = \`0 0 30px rgba(255, 69, 0, \${heatPercent / 100 * 0.5 + 0.1})\`;
+                        heatOverlay.style.backgroundColor = \`rgba(255, 69, 0, \${heatPercent / 100 * 0.5})\`;
+
+                        if (heatPresses >= requiredHeatPresses) {
+                            document.removeEventListener('keydown', handleSpaceBar);
+                            goToOxytocinPhase();
+                        }
+                    }
+                }
+
+                function goToOxytocinPhase() {
+                    const oxytocinFormula = 'C43H66N12O12S2'; 
+                    let copiesMade = 0;
+                    const requiredCopies = 3;
+
+                    stage3.innerHTML = \`
+                        <h3 style="margin-bottom: 5px;">Hormonal Synthesis: Oxytocin</h3>
+                        <div class="oxytocin-brain">
+                            <p>Copy the Oxytocin chemical structure (required for release):</p>
+                            <p><strong>\${oxytocinFormula}</strong></p>
+                            <input type="text" id="oxytocin-input" placeholder="Paste the formula here">
+                            <p id="copy-status">Copies made: 0 / \${requiredCopies}</p>
+                            <button id="release-button" disabled>RELEASE</button>
+                        </div>
+                    \`;
+
+                    const oxytocinInput = document.getElementById('oxytocin-input');
+                    const copyStatus = document.getElementById('copy-status');
+                    const releaseButton = document.getElementById('release-button');
+                    
+                    oxytocinInput.focus();
+
+                    oxytocinInput.addEventListener('input', (e) => {
+                        if (e.target.value.toUpperCase() === oxytocinFormula.toUpperCase()) {
+                            e.target.value = ''; 
+                            copiesMade++;
+                            copyStatus.textContent = \`Copies made: \${copiesMade} / \${requiredCopies}\`;
+                            
+                            if (copiesMade >= requiredCopies) {
+                                releaseButton.disabled = false;
+                                releaseButton.style.backgroundColor = '#ff477e';
+                            }
+                        }
+                    });
+
+                    releaseButton.addEventListener('click', () => {
+                        stage3.classList.remove('active');
+                        conclusion.classList.add('active');
+                        conclusion.innerHTML = '<h1>💕 CONGRATS! OXYTOCIN RELEASED! YOU ARE IN LOVE! 💕</h1>';
+                    });
+                }
                 
+                initStage1();
+            });
+        `;
     </script>
 </body>
 </html>
