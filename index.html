@@ -40,9 +40,9 @@
             }
             .game-stage.active { display: flex; }
 
-            /* --- STAGE 1 STYLES (Simple Sliding Pulse) --- */
+            /* --- STAGE 1 STYLES (Radial Pulse) --- */
             #profiles-container {
-                display: flex; justify-content: space-between; 
+                display: flex; justify-content: space-around; /* Space around images */
                 width: 90vw; 
                 height: 80vh; 
                 align-items: flex-end;
@@ -50,60 +50,37 @@
             }
             .profile-wrapper {
                 position: relative;
-                width: 35vw; 
+                width: 35vw; /* Slightly smaller profiles */
                 height: 70vh;    
-                margin: 0; 
+                margin: 0 5vw; /* Push them apart */
                 filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
             }
             .profile-image {
                 width: 100%; height: 100%; object-fit: contain; 
             }
             
-            /* --- PULSE TRACK STYLES --- */
-            #pulse-track {
-                position: relative;
-                width: 20vw;      
-                height: 10px;    
-                align-self: center; 
-                margin-bottom: 20vh;
-                background-color: #555; /* Center line/track */
-                overflow: hidden;
+            /* 1. Target Radial Pulse Animation */
+            @keyframes radial-pulse {
+                0% { transform: scale(0.1); opacity: 0.8; }
+                50% { transform: scale(1.5); opacity: 0; } /* Peak and fade out exactly at 50% */
+                100% { transform: scale(0.1); opacity: 0.8; } /* Reset */
             }
 
-            /* 1. Target Pulse Animation */
-            @keyframes target-slide {
-                0% { transform: translateX(100%); opacity: 1; } /* Start at Target Head (Right) */
-                49% { transform: translateX(0%); opacity: 1; } /* Peak hits the Center Line (Collision Point) */
-                50% { transform: translateX(0%); opacity: 0; } /* Disappear at center */
-                51% { transform: translateX(100%); opacity: 0; } /* Instantly reset to start */
-                100% { transform: translateX(100%); opacity: 1; } /* Reset */
-            }
-
-            /* 2. Player Pulse Animation */
-            @keyframes player-slide {
-                0% { transform: translateX(-100%); opacity: 1; } /* Start at Player Head (Left) */
-                100% { transform: translateX(0%); opacity: 0; } /* Travel to center and disappear */
-            }
-
-            .pulse {
+            /* 2. Target Profile Pseudo-element (The pulse itself) */
+            .profile-wrapper.target::after {
+                content: '';
                 position: absolute;
-                top: 0;
-                width: 10px; /* Size of the pulse dot */
-                height: 10px;
+                top: 50%;
+                left: 50%;
+                width: 100%;
+                height: 100%;
                 border-radius: 50%;
-                box-shadow: 0 0 10px currentColor; /* Glow effect */
-            }
-
-            #target-pulse {
-                background-color: #ff477e; 
-                right: 0; /* Aligned to the right side of the track */
-                animation: target-slide 2s linear infinite; /* 2s cycle = 30 BPM */
-            }
-
-            #player-pulse {
-                background-color: #00ffc8; 
-                left: 0; /* Aligned to the left side of the track */
-                opacity: 0;
+                background-color: #ff477e; /* Red color */
+                transform: translate(-50%, -50%) scale(0.1);
+                /* 2s cycle = 30 BPM. Must match JS logic. */
+                animation: radial-pulse 2s linear infinite; 
+                box-shadow: 0 0 10px #ff477e;
+                z-index: -1;
             }
 
 
@@ -185,7 +162,7 @@
 
                 // --- STAGE 1 LOGIC ---
                 const targetBPM = 30;
-                const targetInterval = 60000 / targetBPM; 
+                const targetInterval = 60000 / targetBPM; // 2000ms
                 let playerClicks = [];
                 const syncThreshold = 250; 
                 let lastTargetBeat = performance.now();
@@ -194,15 +171,10 @@
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Click anywhere to match the red pulse as it hits the center line!</p>
+                        <p>Click anywhere when the pulse reaches its peak size!</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
-                            </div>
-                            
-                            <div id="pulse-track"> 
-                                <div id="target-pulse" class="pulse"></div>
-                                <div id="player-pulse" class="pulse"></div>
                             </div>
                             
                             <div class="profile-wrapper target" id="target-profile">
@@ -231,29 +203,26 @@
                     const timeSinceLastBeat = clickTime % targetInterval;
                     const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
                     const playerProfile = document.getElementById('player-profile');
-                    const playerPulse = document.getElementById('player-pulse');
                     const syncMessage = document.getElementById('sync-message');
 
-                    // 1. Player Feedback: Apply profile flash and pulse animation
+                    // 1. Player Feedback: Apply profile flash
                     playerProfile.classList.add('flash');
                     setTimeout(() => {
                         playerProfile.classList.remove('flash');
                     }, 200);
                     
-                    // Trigger the player pulse animation (simulating immediate travel to the center)
-                    playerPulse.style.animation = 'none';
-                    playerPulse.offsetHeight; // Force reflow
-                    // This animation is short (0.2s) and fades quickly to visualize the hit
-                    playerPulse.style.animation = 'player-slide 0.2s ease-out forwards'; 
-
-                    // 2. Synchronization Logic
-                    if (difference <= syncThreshold) {
+                    // 2. Synchronization Logic: The peak of the animation is at 50% of the 2000ms cycle (1000ms).
+                    // We check difference from the 50% mark of the beat interval.
+                    const targetPeakTime = targetInterval / 2; // 1000ms mark
+                    const timeFromPeak = Math.abs(timeSinceLastBeat - targetPeakTime);
+                    
+                    if (timeFromPeak <= syncThreshold) {
                         playerClicks.push('synced');
-                        syncMessage.textContent = \`✅ COLLISION! (\${playerClicks.length} / 5)\`;
+                        syncMessage.textContent = \`✅ PULSE MATCH! (\${playerClicks.length} / 5)\`;
                         syncMessage.style.color = '#00ffc8';
                     } else {
                         playerClicks = []; 
-                        syncMessage.textContent = '❌ MISS! Try again!';
+                        syncMessage.textContent = '❌ PULSE MISSED! Try again!';
                         syncMessage.style.color = '#ff477e';
                     }
                     
