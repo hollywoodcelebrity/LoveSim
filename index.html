@@ -187,7 +187,7 @@
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Click anywhere when the pulse reaches its peak size!</p>
+                        <p>Click anywhere when the new pulse begins to emanate!</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
@@ -209,47 +209,48 @@
 
                     document.addEventListener('click', handleSyncClick);
                 }
-function handleSyncClick() {
-    if (!document.getElementById('stage-1').classList.contains('active')) {
-        return;
-    }
-    
-    const clickTime = performance.now();
-    const timeSinceLastBeat = clickTime % targetInterval;
-    
-    // The target synchronization point is the exact start of the interval (0ms).
-    // We calculate the difference from the closest start/reset point (0ms or 2000ms).
-    const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
-    
-    const playerProfile = document.getElementById('player-profile');
-    const syncMessage = document.getElementById('sync-message');
 
-    // 1. Player Feedback: Apply profile flash
-    playerProfile.classList.add('flash');
-    setTimeout(() => {
-        playerProfile.classList.remove('flash');
-    }, 200);
-    
-    // 2. Synchronization Logic
-    if (difference <= syncThreshold) {
-        playerClicks.push('synced');
-        syncMessage.textContent = `✅ SYNCHRONIZED! (\${playerClicks.length} / 5)`;
-        syncMessage.style.color = '#00ffc8';
-    } else {
-        playerClicks = []; 
-        syncMessage.textContent = '❌ MISS! Try again!';
-        syncMessage.style.color = '#ff477e';
-    }
-    
-    // 3. Win Condition Check
-    if (playerClicks.length >= 5) { 
-        clearInterval(syncBeatTimer);
-        document.removeEventListener('click', handleSyncClick); 
-        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
-        syncMessage.style.color = 'white';
-        setTimeout(goToStage2, 1500);
-    }
-        }
+                function handleSyncClick() {
+                    if (!document.getElementById('stage-1').classList.contains('active')) {
+                        return;
+                    }
+                    
+                    const clickTime = performance.now();
+                    const timeSinceLastBeat = clickTime % targetInterval;
+                    
+                    // The synchronization point is the exact start of the interval (0ms).
+                    // We calculate the difference from the closest start/reset point (0ms or 2000ms).
+                    const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+                    
+                    const playerProfile = document.getElementById('player-profile');
+                    const syncMessage = document.getElementById('sync-message');
+
+                    // 1. Player Feedback: Apply profile flash
+                    playerProfile.classList.add('flash');
+                    setTimeout(() => {
+                        playerProfile.classList.remove('flash');
+                    }, 200);
+                    
+                    // 2. Synchronization Logic
+                    if (difference <= syncThreshold) {
+                        playerClicks.push('synced');
+                        syncMessage.textContent = \`✅ SYNCHRONIZED! (\${playerClicks.length} / 5)\`;
+                        syncMessage.style.color = '#00ffc8';
+                    } else {
+                        playerClicks = []; 
+                        syncMessage.textContent = '❌ MISS! Try again!';
+                        syncMessage.style.color = '#ff477e';
+                    }
+                    
+                    // 3. Win Condition Check
+                    if (playerClicks.length >= 5) { 
+                        clearInterval(syncBeatTimer);
+                        document.removeEventListener('click', handleSyncClick); 
+                        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
+                        syncMessage.style.color = 'white';
+                        setTimeout(goToStage2, 1500);
+                    }
+                }
 
                 function goToStage2() {
                     stage1.classList.remove('active');
@@ -275,150 +276,3 @@ function handleSyncClick() {
                     stage2.innerHTML = \`
                         <h3 style="margin-bottom: 5px;">Mixing Microbiota (Drag and Drop)</h3>
                         <p>Drag the cells from the sides to the middle of the screen to mix them.</p>
-                        <div id="microbe-container"></div>
-                        <p id="mix-status" style="margin-top: 10px;">Mixed: 0 / 10</p>
-                    \`;
-
-                    const microbeContainer = document.getElementById('microbe-container');
-                    const mixStatus = document.getElementById('mix-status');
-                    let mixedCount = 0;
-                    const requiredMix = 10;
-
-                    for (let i = 0; i < 20; i++) {
-                        const microbe = document.createElement('div');
-                        microbe.className = 'microbe ' + (i < 10 ? 'red' : 'blue');
-                        microbe.id = 'microbe-' + i;
-                        microbe.draggable = true;
-                        
-                        const x = i < 10 ? Math.random() * 20 + 5 : Math.random() * 20 + 75; 
-                        const y = Math.random() * 90;
-                        microbe.style.left = \`\${x}%\`;
-                        microbe.style.top = \`\${y}%\`;
-                        microbe.isMixed = false;
-                        microbeContainer.appendChild(microbe);
-
-                        microbe.ondragstart = (e) => {
-                            e.dataTransfer.setData("text/plain", e.target.id);
-                        };
-                    }
-                    
-                    microbeContainer.ondragover = (e) => e.preventDefault();
-                    microbeContainer.ondrop = (e) => {
-                        e.preventDefault();
-                        const id = e.dataTransfer.getData("text/plain");
-                        const draggedMicrobe = document.getElementById(id);
-                        const containerRect = microbeContainer.getBoundingClientRect();
-
-                        const newX = e.clientX - containerRect.left - (draggedMicrobe.offsetWidth / 2);
-                        const newY = e.clientY - containerRect.top - (draggedMicrobe.offsetHeight / 2);
-
-                        draggedMicrobe.style.left = \`\${newX}px\`;
-                        draggedMicrobe.style.top = \`\${newY}px\`;
-
-                        const centerX = containerRect.width / 2;
-                        const tolerance = containerRect.width / 4; 
-
-                        if (newX > centerX - tolerance && newX < centerX + tolerance && !draggedMicrobe.isMixed) {
-                            draggedMicrobe.style.backgroundColor = 'purple';
-                            draggedMicrobe.isMixed = true;
-                            mixedCount++;
-                            mixStatus.textContent = \`Mixed: \${mixedCount} / \${requiredMix}\`;
-                        }
-
-                        if (mixedCount >= requiredMix) {
-                            mixStatus.textContent = '🦠 Microbiota successfully exchanged! Commencing Stage 3...';
-                            setTimeout(goToStage3, 1500);
-                        }
-                    };
-                }
-
-                function goToStage3() {
-                    stage2.classList.remove('active');
-                    stage3.classList.add('active');
-                    initStage3();
-                }
-
-                // --- STAGE 3: Heat and Oxytocin ---
-                let heatPresses = 0;
-                const requiredHeatPresses = 30;
-
-                function initStage3() {
-                    stage3.innerHTML = \`
-                        <h2>Stage 3: Hormonal Release (Vasodilation)</h2>
-                        <p>Initiate the physiological response...</p>
-                        <div id="heat-profiles"><div class="heat-overlay" id="heat-overlay"></div></div>
-                        <p style="margin-top: 20px;">Press **SPACE BAR** repeatedly to heat up!</p>
-                        <p id="heat-level">Heat: 0%</p>
-                    \`;
-
-                    document.addEventListener('keydown', handleSpaceBar);
-                }
-
-                function handleSpaceBar(e) {
-                    if (stage3.classList.contains('active') && e.code === 'Space') {
-                        heatPresses++;
-                        const heatPercent = Math.min(100, (heatPresses / requiredHeatPresses) * 100);
-                        document.getElementById('heat-level').textContent = \`Heat: \${Math.round(heatPercent)}%\`;
-                        
-                        const heatProfiles = document.getElementById('heat-profiles');
-                        const heatOverlay = document.getElementById('heat-overlay');
-                        
-                        heatProfiles.classList.add('heating');
-                        heatProfiles.style.boxShadow = \`0 0 30px rgba(255, 69, 0, \${heatPercent / 100 * 0.5 + 0.1})\`;
-                        heatOverlay.style.backgroundColor = \`rgba(255, 69, 0, \${heatPercent / 100 * 0.5})\`;
-
-                        if (heatPresses >= requiredHeatPresses) {
-                            document.removeEventListener('keydown', handleSpaceBar);
-                            goToOxytocinPhase();
-                        }
-                    }
-                }
-
-                function goToOxytocinPhase() {
-                    const oxytocinFormula = 'C43H66N12O12S2'; 
-                    let copiesMade = 0;
-                    const requiredCopies = 3;
-
-                    stage3.innerHTML = \`
-                        <h3 style="margin-bottom: 5px;">Hormonal Synthesis: Oxytocin</h3>
-                        <div class="oxytocin-brain">
-                            <p>Copy the Oxytocin chemical structure (required for release):</p>
-                            <p><strong>\${oxytocinFormula}</strong></p>
-                            <input type="text" id="oxytocin-input" placeholder="Paste the formula here">
-                            <p id="copy-status">Copies made: 0 / \${requiredCopies}</p>
-                            <button id="release-button" disabled>RELEASE</button>
-                        </div>
-                    \`;
-
-                    const oxytocinInput = document.getElementById('oxytocin-input');
-                    const copyStatus = document.getElementById('copy-status');
-                    const releaseButton = document.getElementById('release-button');
-                    
-                    oxytocinInput.focus();
-
-                    oxytocinInput.addEventListener('input', (e) => {
-                        if (e.target.value.toUpperCase() === oxytocinFormula.toUpperCase()) {
-                            e.target.value = ''; 
-                            copiesMade++;
-                            copyStatus.textContent = \`Copies made: \${copiesMade} / \${requiredCopies}\`;
-                            
-                            if (copiesMade >= requiredCopies) {
-                                releaseButton.disabled = false;
-                                releaseButton.style.backgroundColor = '#ff477e';
-                            }
-                        }
-                    });
-
-                    releaseButton.addEventListener('click', () => {
-                        stage3.classList.remove('active');
-                        conclusion.classList.add('active');
-                        conclusion.innerHTML = '<h1>💕 CONGRATS! OXYTOCIN RELEASED! YOU ARE IN LOVE! 💕</h1>';
-                    });
-                }
-                
-                initStage1();
-            });
-        `;
-    </script>
-</body>
-</html>
