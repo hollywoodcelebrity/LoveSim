@@ -245,21 +245,21 @@
                 const syncThreshold = 150; // Max ms difference to be considered "synced"
                 let lastTargetBeat = performance.now();
 
-                function initStage1() {
-                   // Corrected template literal structure
-                   stage1.innerHTML = \`
-                        <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Match the red pulse rhythm (1 click per second)</p>
-                        <div style="display: flex; align-items: center;">
-                            <div class="profile left">Player Brain</div>
-                            <div class="profile right">
-                                <div class="brain-wave"></div>
-                                Target Brain
-                            </div>
-                        </div>
-                        <button id="pulse-button">CLICK TO SYNC</button>
-                        <p id="sync-message">Match the Target BPM (1 click per second)</p>
-                    \`;
+              function initStage1() {
+   stage1.innerHTML = `
+        <h2>Stage 1: Neural Synchronization</h2>
+        <p>Match the red pulse rhythm (BPM: 40, 1 click every 1.5 seconds)</p>
+        <div id="profiles-container">
+            <div class="profile-wrapper" id="player-profile">
+                <img src="player_profile.png" alt="Player Profile" class="profile-image">
+            </div>
+            <div class="profile-wrapper target" id="target-profile">
+                <img src="target_profile.png" alt="Target Profile" class="profile-image">
+                <div class="brain-wave"></div> </div>
+        </div>
+        <button id="pulse-button">CLICK TO SYNC</button>
+        <p id="sync-message">Match the Target BPM</p>
+    `;
 
                     const pulseButton = document.getElementById('pulse-button');
                     const syncMessage = document.getElementById('sync-message');
