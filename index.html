@@ -40,9 +40,9 @@
             }
             .game-stage.active { display: flex; }
 
-            /* --- STAGE 1 STYLES (Radial Pulse) --- */
+            /* --- STAGE 1 STYLES (Multiple Radar Rings) --- */
             #profiles-container {
-                display: flex; justify-content: space-around; /* Space around images */
+                display: flex; justify-content: space-around; 
                 width: 90vw; 
                 height: 80vh; 
                 align-items: flex-end;
@@ -50,9 +50,9 @@
             }
             .profile-wrapper {
                 position: relative;
-                width: 35vw; /* Slightly smaller profiles */
+                width: 35vw; 
                 height: 70vh;    
-                margin: 0 5vw; /* Push them apart */
+                margin: 0 5vw; 
                 filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
             }
             .profile-image {
@@ -62,11 +62,18 @@
             /* 1. Target Radial Pulse Animation */
             @keyframes radial-pulse {
                 0% { transform: scale(0.1); opacity: 0.8; }
-                50% { transform: scale(1.5); opacity: 0; } /* Peak and fade out exactly at 50% */
-                100% { transform: scale(0.1); opacity: 0.8; } /* Reset */
+                50% { opacity: 0.5; } /* Mid-point visible */
+                100% { transform: scale(2.0); opacity: 0; } /* Larger final scale, fades out completely */
             }
 
-            /* 2. Target Profile Pseudo-element (The pulse itself) */
+            /* 2. Target Profile Container */
+            .profile-wrapper.target {
+                /* Important: Clipping must be off to see the pulse rings expand past the image boundary */
+                overflow: visible; 
+            }
+
+            /* 3. Generating Multiple Rings */
+            .profile-wrapper.target::before,
             .profile-wrapper.target::after {
                 content: '';
                 position: absolute;
@@ -75,16 +82,25 @@
                 width: 100%;
                 height: 100%;
                 border-radius: 50%;
-                background-color: #ff477e; /* Red color */
+                border: 2px solid #ff477e; /* Thin border for the ring look */
                 transform: translate(-50%, -50%) scale(0.1);
-                /* 2s cycle = 30 BPM. Must match JS logic. */
-                animation: radial-pulse 2s linear infinite; 
-                box-shadow: 0 0 10px #ff477e;
+                animation-duration: 2s; /* Full cycle time */
+                animation-timing-function: linear;
+                animation-iteration-count: infinite;
+                animation-name: radial-pulse;
+                box-shadow: 0 0 5px rgba(255, 71, 126, 0.5);
                 z-index: -1;
             }
-
-
-            /* Player Feedback Flash (Kept for the profile glow) */
+            
+            /* Staggering the rings */
+            .profile-wrapper.target::before {
+                animation-delay: 0s; /* First ring starts immediately */
+            }
+            .profile-wrapper.target::after {
+                animation-delay: 1s; /* Second ring starts half a cycle later */
+            }
+            
+            /* Player Feedback Flash */
             @keyframes playerFlash {
                 0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
                 50% { box-shadow: 0 0 20px 5px #00ffc8; } 
@@ -201,7 +217,12 @@
                     
                     const clickTime = performance.now();
                     const timeSinceLastBeat = clickTime % targetInterval;
+                    
+                    // The peak of the animation is at 100% scale and 0% opacity at 100% duration (2000ms).
+                    // We need to sync with the end of the pulse.
+                    // Click window is close to 0ms or close to 2000ms (the reset point).
                     const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+                    
                     const playerProfile = document.getElementById('player-profile');
                     const syncMessage = document.getElementById('sync-message');
 
@@ -211,12 +232,8 @@
                         playerProfile.classList.remove('flash');
                     }, 200);
                     
-                    // 2. Synchronization Logic: The peak of the animation is at 50% of the 2000ms cycle (1000ms).
-                    // We check difference from the 50% mark of the beat interval.
-                    const targetPeakTime = targetInterval / 2; // 1000ms mark
-                    const timeFromPeak = Math.abs(timeSinceLastBeat - targetPeakTime);
-                    
-                    if (timeFromPeak <= syncThreshold) {
+                    // 2. Synchronization Logic
+                    if (difference <= syncThreshold) {
                         playerClicks.push('synced');
                         syncMessage.textContent = \`✅ PULSE MATCH! (\${playerClicks.length} / 5)\`;
                         syncMessage.style.color = '#00ffc8';
