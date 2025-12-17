@@ -63,40 +63,57 @@
             #rhythm-string-container {
                 position: relative;
                 width: 20vw; /* Width of the string path */
-                height: 4px; 
-                background-color: #555; /* The base line */
+                height: 10px; /* Increased height to give the wave room to vibrate */
                 align-self: center; 
                 margin-bottom: 20vh; /* Lift the string up */
                 overflow: hidden;
+                /* Optional: Draw the static center line in the background */
+                background: repeating-linear-gradient(
+                    90deg, 
+                    #555, 
+                    #555 1px, 
+                    #333 1px, 
+                    #333 4px
+                ); /* Creates a subtle dotted/dashed center line */
+            }
+
+            /* Base animation for the wave ripple effect */
+            @keyframes wave-ripple {
+                0% { transform: translateY(0px); }
+                50% { transform: translateY(2px); } /* Vibrate up */
+                100% { transform: translateY(0px); }
             }
 
             /* Target Pulse Animation (The infinite beat) */
             @keyframes target-pulse {
                 0% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
-                50% { left: 0%; opacity: 1; transform: scaleX(1); } /* Peak hits the center */
+                49% { left: 0%; opacity: 1; transform: scaleX(1); } /* Peak hits center just before 50% */
+                50% { left: 0%; opacity: 1; transform: scaleX(1); } /* Hold peak for crash */
                 100% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
             }
 
             #target-wave {
                 position: absolute;
-                top: 0;
+                top: 3px; /* Position slightly off the center line */
                 width: 100%;
                 height: 4px;
                 background-color: #ff477e; /* Target Red */
-                animation: target-pulse 2s linear infinite; /* 30 BPM */
+                animation: 
+                    target-pulse 2s linear infinite, /* Main travel animation */
+                    wave-ripple 0.05s linear infinite alternate; /* High-frequency vibration */
                 transform-origin: right;
             }
 
             /* Player Response Animation (The crash effect) */
             @keyframes player-crash {
                 0% { right: 100%; opacity: 0.8; transform: scaleX(0.1); }
-                10% { right: 0%; opacity: 1; transform: scaleX(1); } /* Quickly hits the center */
-                100% { right: 0%; opacity: 0; transform: scaleX(0); } /* Holds briefly and disappears */
+                10% { right: 0%; opacity: 1; transform: scaleX(1); } 
+                100% { right: 0%; opacity: 0; transform: scaleX(0); } 
             }
 
             #player-wave {
                 position: absolute;
-                top: 0;
+                top: 3px; /* Position slightly off the center line */
                 width: 100%;
                 height: 4px;
                 background-color: #00ffc8; /* Player Cyan */
@@ -241,7 +258,9 @@
                     // Trigger the player wave animation (crash effect)
                     playerWave.style.animation = 'none';
                     playerWave.offsetHeight; // Force reflow
-                    playerWave.style.animation = 'player-crash 0.3s ease-out'; 
+                    
+                    // NEW: Combine crash animation with continuous high-frequency vibration
+                    playerWave.style.animation = 'player-crash 0.3s ease-out, wave-ripple 0.05s linear infinite alternate'; 
 
 
                     // 2. Synchronization Logic
