@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Love Simulator</title>
+    <title>Bio-Love Simulator</title>
     <style id="game-style"></style>
 </head>
 <body>
@@ -17,7 +17,7 @@
     <script id="game-script"></script>
 
     <script>
-        // --- THIS SCRIPT BLOCK IS THE WRAPPER THAT INJECTS CSS/JS ---
+        // --- THIS SCRIPT BLOCK INJECTS ALL CSS AND JS CONTENT CORRECTLY ---
         const cssContent = document.getElementById('game-style');
         const jsContent = document.getElementById('game-script');
         
@@ -26,7 +26,7 @@
             body {
                 width: 100vw; height: 100vh;
                 display: flex; justify-content: center; align-items: center;
-                margin: 0; background-color: #FFFFFF; color: black;
+                margin: 0; background-color: #111; color: white;
                 font-family: 'Arial', sans-serif; overflow: hidden; box-sizing: border-box;
             }
             #game-container {
@@ -41,83 +41,63 @@
             .game-stage.active { display: flex; }
 
             /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
-/* --- STAGE 1 STYLES (Image & Brainwaves) --- */
-#profiles-container {
-    display: flex;
-    justify-content: space-between; /* Push profiles out */
-    width: 100vw; /* Take up the entire screen width */
-    height: 90vh; /* Allow room for title and button */
-    align-items: flex-end;
-    /* Move container slightly down to account for title/button space */
-    margin-top: 50px; 
-}
-
-.profile-wrapper {
-    position: relative;
-    /* MAX SIZE: Each profile is nearly half the screen width and dominates height */
-    width: 49vw;      
-    height: 80vh;    
-    margin: 0; /* Remove margin to push them to the very edge */
-    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)); /* Stronger glow */
-}
-
-.profile-image {
-    width: 100%;
-    height: 100%;
-    object-fit: contain; 
-}
-
-/* 1. ANIMATION KEYFRAMES (No change) */
-@keyframes brainPulse {
-    0% { 
-        transform: scaleY(0.5); 
-        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
-    }
-    50% { 
-        transform: scaleY(2.5); 
-        box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
-    }
-    100% { 
-        transform: scaleY(0.5); 
-        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
-    }
-}
-
-/* 2. WAVE STYLING AND PLACEMENT */
-.brain-wave {
-    position: absolute;
-    /* 🚨 CRITICAL: You MUST adjust these values for your huge images: */
-    top: 25%;     
-    left: 15%;    
-    width: 60%;   
-    height: 3px;  
-    
-    background-color: #ff477e; 
-    transform-origin: center;
-    animation: brainPulse 2s linear infinite; 
-}
-
-/* 3. PLAYER FEEDBACK (Flash on click) */
-@keyframes playerFlash {
-    0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-    50% { box-shadow: 0 0 20px 5px #00ffc8; } 
-    100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-}
-#player-profile.flash { animation: playerFlash 0.2s ease-out; }
-
-/* 🚨 ALSO ADJUST: Make sure the main content is readable above the large images */
-#stage-1 h2, #stage-1 p, #pulse-button {
-    z-index: 10; /* Ensure text/button is on top of the images */
-    position: relative;
-}
-            /* --- GENERAL BUTTONS/MESSAGE STYLES --- */
-            #pulse-button {
-                padding: 15px 30px; font-size: 1.2em; cursor: pointer;
-                background-color: #ff477e; color: white; border: none;
-                border-radius: 8px; margin-top: 30px; transition: background-color 0.2s;
+            #profiles-container {
+                display: flex; justify-content: space-between; 
+                width: 100vw; height: 90vh; 
+                align-items: flex-end;
+                margin-top: 50px; 
             }
-            #pulse-button:active { background-color: #cc3760; }
-            #sync-message { font-size: 1.5em; margin-top: 20px; }
+            .profile-wrapper {
+                position: relative;
+                width: 49vw;      
+                height: 80vh;    
+                margin: 0; 
+                filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+            }
+            .profile-image {
+                width: 100%; height: 100%; object-fit: contain; 
+            }
+
+            /* 1. ANIMATION KEYFRAMES */
+            @keyframes brainPulse {
+                0% { 
+                    transform: scaleY(0.5); 
+                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
+                }
+                50% { 
+                    transform: scaleY(2.5); 
+                    box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
+                }
+                100% { 
+                    transform: scaleY(0.5); 
+                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
+                }
+            }
+
+            /* 2. WAVE STYLING AND PLACEMENT */
+            .brain-wave {
+                position: absolute;
+                /* Adjust these values to position the wave over the brain in your large PNGs */
+                top: 25%; 
+                left: 15%; 
+                width: 60%; 
+                height: 3px; 
+                background-color: #ff477e;
+                transform-origin: center;
+                animation: brainPulse 2s linear infinite; /* 30 BPM (2s) */
+            }
+
+            /* 3. PLAYER FEEDBACK (Flash on click) */
+            @keyframes playerFlash {
+                0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+                50% { box-shadow: 0 0 20px 5px #00ffc8; } 
+                100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+            }
+            #player-profile.flash { animation: playerFlash 0.2s ease-out; }
+            
+            /* --- GENERAL STYLES (Removed pulse button) --- */
+            #sync-message { font-size: 1.5em; margin-top: 20px; z-index: 10; position: relative;}
+            #stage-1 h2, #stage-1 p { z-index: 10; position: relative;}
 
             /* --- STAGE 2 STYLES (Microbiota) --- */
             .kiss-scene {
@@ -181,19 +161,20 @@
                 const stage2 = document.getElementById('stage-2');
                 const stage3 = document.getElementById('stage-3');
                 const conclusion = document.getElementById('conclusion');
-                // const bassPulse = document.getElementById('bass-pulse');
+                const bassPulse = document.getElementById('bass-pulse');
 
-                // --- STAGE 1: Match Brainwaves ---
-                const targetBPM = 30; // 30 beats per minute
-                const targetInterval = 60000 / targetBPM; // 2000 ms per beat (2 seconds)
+                // --- STAGE 1 LOGIC ---
+                const targetBPM = 30;
+                const targetInterval = 60000 / targetBPM; 
                 let playerClicks = [];
-                const syncThreshold = 250; // Increased tolerance for easier sync
+                const syncThreshold = 250; 
                 let lastTargetBeat = performance.now();
+                let syncBeatTimer;
 
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
+                        <p>Click anywhere with your mouse to match the red pulse rhythm (BPM: \${targetBPM}, 1 click every \${targetInterval/1000} seconds)</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
@@ -203,55 +184,61 @@
                                 <div class="brain-wave"></div>
                             </div>
                         </div>
-                        <button id="pulse-button">CLICK TO SYNC</button>
                         <p id="sync-message">Match the Target BPM</p>
                     \`;
 
-                    const pulseButton = document.getElementById('pulse-button');
                     const syncMessage = document.getElementById('sync-message');
-                    // if (bassPulse) bassPulse.play();
+                    if (bassPulse) bassPulse.play();
 
-                    const beatTimer = setInterval(() => {
+                    syncBeatTimer = setInterval(() => {
                         lastTargetBeat = performance.now();
                     }, targetInterval);
 
-                    pulseButton.addEventListener('click', () => {
-                        const clickTime = performance.now();
-                        const timeSinceLastBeat = clickTime % targetInterval;
-                        const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+                    document.addEventListener('click', handleSyncClick);
+                }
 
-                        // 1. Player Feedback: Apply flash to the left profile
-                        const playerProfile = document.getElementById('player-profile');
-                        playerProfile.classList.add('flash');
-                        setTimeout(() => {
-                            playerProfile.classList.remove('flash');
-                        }, 200);
+                function handleSyncClick() {
+                    if (!document.getElementById('stage-1').classList.contains('active')) {
+                        return;
+                    }
+                    
+                    const clickTime = performance.now();
+                    const timeSinceLastBeat = clickTime % targetInterval;
+                    const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+                    const playerProfile = document.getElementById('player-profile');
+                    const syncMessage = document.getElementById('sync-message');
 
-                        if (difference <= syncThreshold) {
-                            playerClicks.push('synced');
-                            syncMessage.textContent = \`✅ Synced! (\${playerClicks.length} / 5)\`;
-                            pulseButton.style.backgroundColor = '#00ffc8';
-                        } else {
-                            playerClicks = []; 
-                            syncMessage.textContent = '❌ Desynced. Try again!';
-                            pulseButton.style.backgroundColor = '#ff477e';
-                        }
-                        
-                        setTimeout(() => pulseButton.style.backgroundColor = '#ff477e', 100);
+                    // 1. Player Feedback: Apply flash
+                    playerProfile.classList.add('flash');
+                    setTimeout(() => {
+                        playerProfile.classList.remove('flash');
+                    }, 200);
 
-                        if (playerClicks.length >= 5) { 
-                            clearInterval(beatTimer);
-                            syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
-                            pulseButton.disabled = true;
-                            setTimeout(goToStage2, 1500);
-                        }
-                    });
+                    // 2. Synchronization Logic
+                    if (difference <= syncThreshold) {
+                        playerClicks.push('synced');
+                        syncMessage.textContent = \`✅ Synced! (\${playerClicks.length} / 5)\`;
+                        syncMessage.style.color = '#00ffc8';
+                    } else {
+                        playerClicks = []; 
+                        syncMessage.textContent = '❌ Desynced. Try again!';
+                        syncMessage.style.color = '#ff477e';
+                    }
+                    
+                    // 3. Win Condition Check
+                    if (playerClicks.length >= 5) { 
+                        clearInterval(syncBeatTimer);
+                        document.removeEventListener('click', handleSyncClick); 
+                        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
+                        syncMessage.style.color = 'white';
+                        setTimeout(goToStage2, 1500);
+                    }
                 }
 
                 function goToStage2() {
                     stage1.classList.remove('active');
                     stage2.classList.add('active');
-                    // if (bassPulse) bassPulse.pause();
+                    if (bassPulse) bassPulse.pause();
                     initStage2();
                 }
 
@@ -275,12 +262,14 @@
                         <div id="microbe-container"></div>
                         <p id="mix-status" style="margin-top: 10px;">Mixed: 0 / 10</p>
                     \`;
+                    
+                    // The rest of the drag-and-drop logic for Stage 2 is extensive. 
+                    // I will define the drag functionality here briefly for completion:
 
                     const microbeContainer = document.getElementById('microbe-container');
                     const mixStatus = document.getElementById('mix-status');
                     let mixedCount = 0;
                     const requiredMix = 10;
-                    let microbes = [];
 
                     for (let i = 0; i < 20; i++) {
                         const microbe = document.createElement('div');
@@ -293,7 +282,6 @@
                         microbe.style.left = \`\${x}%\`;
                         microbe.style.top = \`\${y}%\`;
                         microbe.isMixed = false;
-                        microbes.push(microbe);
                         microbeContainer.appendChild(microbe);
 
                         microbe.ondragstart = (e) => {
