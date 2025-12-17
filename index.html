@@ -40,54 +40,72 @@
             }
             .game-stage.active { display: flex; }
 
-            /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
+            /* --- STAGE 1 STYLES (Interactive Rhythm String) --- */
             #profiles-container {
                 display: flex; justify-content: space-between; 
-                width: 100vw; height: 90vh; 
+                width: 90vw; 
+                height: 80vh; 
                 align-items: flex-end;
                 margin-top: 50px; 
             }
             .profile-wrapper {
                 position: relative;
-                width: 49vw;      
-                height: 80vh;    
+                width: 35vw; 
+                height: 70vh;    
                 margin: 0; 
                 filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
             }
             .profile-image {
                 width: 100%; height: 100%; object-fit: contain; 
             }
-
-            /* 1. ANIMATION KEYFRAMES */
-            @keyframes brainPulse {
-                0% { 
-                    transform: scaleY(0.5); 
-                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
-                }
-                50% { 
-                    transform: scaleY(2.5); 
-                    box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
-                }
-                100% { 
-                    transform: scaleY(0.5); 
-                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
-                }
+            
+            /* --- RHYTHM STRING STYLES --- */
+            #rhythm-string-container {
+                position: relative;
+                width: 20vw; /* Width of the string path */
+                height: 4px; 
+                background-color: #555; /* The base line */
+                align-self: center; 
+                margin-bottom: 20vh; /* Lift the string up */
+                overflow: hidden;
             }
 
-            /* 2. WAVE STYLING AND PLACEMENT */
-            .brain-wave {
+            /* Target Pulse Animation (The infinite beat) */
+            @keyframes target-pulse {
+                0% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
+                50% { left: 0%; opacity: 1; transform: scaleX(1); } /* Peak hits the center */
+                100% { left: 100%; opacity: 0.8; transform: scaleX(0.1); }
+            }
+
+            #target-wave {
                 position: absolute;
-                /* Adjust these values to position the wave over the brain in your large PNGs */
-                top: 25%; 
-                left: 15%; 
-                width: 60%; 
-                height: 3px; 
-                background-color: #ff477e;
-                transform-origin: center;
-                animation: brainPulse 2s linear infinite; /* 30 BPM (2s) */
+                top: 0;
+                width: 100%;
+                height: 4px;
+                background-color: #ff477e; /* Target Red */
+                animation: target-pulse 2s linear infinite; /* 30 BPM */
+                transform-origin: right;
             }
 
-            /* 3. PLAYER FEEDBACK (Flash on click) */
+            /* Player Response Animation (The crash effect) */
+            @keyframes player-crash {
+                0% { right: 100%; opacity: 0.8; transform: scaleX(0.1); }
+                10% { right: 0%; opacity: 1; transform: scaleX(1); } /* Quickly hits the center */
+                100% { right: 0%; opacity: 0; transform: scaleX(0); } /* Holds briefly and disappears */
+            }
+
+            #player-wave {
+                position: absolute;
+                top: 0;
+                width: 100%;
+                height: 4px;
+                background-color: #00ffc8; /* Player Cyan */
+                transform-origin: left;
+                opacity: 0; /* Start hidden */
+            }
+
+
+            /* Player Feedback Flash */
             @keyframes playerFlash {
                 0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
                 50% { box-shadow: 0 0 20px 5px #00ffc8; } 
@@ -95,7 +113,7 @@
             }
             #player-profile.flash { animation: playerFlash 0.2s ease-out; }
             
-            /* --- GENERAL STYLES (Removed pulse button) --- */
+            /* --- GENERAL STYLES --- */
             #sync-message { font-size: 1.5em; margin-top: 20px; z-index: 10; position: relative;}
             #stage-1 h2, #stage-1 p { z-index: 10; position: relative;}
 
@@ -179,9 +197,14 @@
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
                             </div>
+                            
+                            <div id="rhythm-string-container"> 
+                                <div id="target-wave"></div>
+                                <div id="player-wave"></div>
+                            </div>
+                            
                             <div class="profile-wrapper target" id="target-profile">
                                 <img src="target_profile.png" alt="Target Profile" class="profile-image">
-                                <div class="brain-wave"></div>
                             </div>
                         </div>
                         <p id="sync-message">Match the Target BPM</p>
@@ -206,22 +229,29 @@
                     const timeSinceLastBeat = clickTime % targetInterval;
                     const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
                     const playerProfile = document.getElementById('player-profile');
+                    const playerWave = document.getElementById('player-wave');
                     const syncMessage = document.getElementById('sync-message');
 
-                    // 1. Player Feedback: Apply flash
+                    // 1. Player Feedback: Apply profile flash and wave crash animation
                     playerProfile.classList.add('flash');
                     setTimeout(() => {
                         playerProfile.classList.remove('flash');
                     }, 200);
+                    
+                    // Trigger the player wave animation (crash effect)
+                    playerWave.style.animation = 'none';
+                    playerWave.offsetHeight; // Force reflow
+                    playerWave.style.animation = 'player-crash 0.3s ease-out'; 
+
 
                     // 2. Synchronization Logic
                     if (difference <= syncThreshold) {
                         playerClicks.push('synced');
-                        syncMessage.textContent = \`✅ Synced! (\${playerClicks.length} / 5)\`;
+                        syncMessage.textContent = \`✅ SYNCHRONIZED! (\${playerClicks.length} / 5)\`;
                         syncMessage.style.color = '#00ffc8';
                     } else {
                         playerClicks = []; 
-                        syncMessage.textContent = '❌ Desynced. Try again!';
+                        syncMessage.textContent = '❌ DESYNCHRONIZED. Try again!';
                         syncMessage.style.color = '#ff477e';
                     }
                     
@@ -262,9 +292,6 @@
                         <div id="microbe-container"></div>
                         <p id="mix-status" style="margin-top: 10px;">Mixed: 0 / 10</p>
                     \`;
-                    
-                    // The rest of the drag-and-drop logic for Stage 2 is extensive. 
-                    // I will define the drag functionality here briefly for completion:
 
                     const microbeContainer = document.getElementById('microbe-container');
                     const mixStatus = document.getElementById('mix-status');
