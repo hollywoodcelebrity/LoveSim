@@ -209,49 +209,47 @@
 
                     document.addEventListener('click', handleSyncClick);
                 }
+function handleSyncClick() {
+    if (!document.getElementById('stage-1').classList.contains('active')) {
+        return;
+    }
+    
+    const clickTime = performance.now();
+    const timeSinceLastBeat = clickTime % targetInterval;
+    
+    // The target synchronization point is the exact start of the interval (0ms).
+    // We calculate the difference from the closest start/reset point (0ms or 2000ms).
+    const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
+    
+    const playerProfile = document.getElementById('player-profile');
+    const syncMessage = document.getElementById('sync-message');
 
-                function handleSyncClick() {
-                    if (!document.getElementById('stage-1').classList.contains('active')) {
-                        return;
-                    }
-                    
-                    const clickTime = performance.now();
-                    const timeSinceLastBeat = clickTime % targetInterval;
-                    
-                    // The peak of the animation is at 100% scale and 0% opacity at 100% duration (2000ms).
-                    // We need to sync with the end of the pulse.
-                    // Click window is close to 0ms or close to 2000ms (the reset point).
-                    const difference = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
-                    
-                    const playerProfile = document.getElementById('player-profile');
-                    const syncMessage = document.getElementById('sync-message');
-
-                    // 1. Player Feedback: Apply profile flash
-                    playerProfile.classList.add('flash');
-                    setTimeout(() => {
-                        playerProfile.classList.remove('flash');
-                    }, 200);
-                    
-                    // 2. Synchronization Logic
-                    if (difference <= syncThreshold) {
-                        playerClicks.push('synced');
-                        syncMessage.textContent = \`✅ PULSE MATCH! (\${playerClicks.length} / 5)\`;
-                        syncMessage.style.color = '#00ffc8';
-                    } else {
-                        playerClicks = []; 
-                        syncMessage.textContent = '❌ PULSE MISSED! Try again!';
-                        syncMessage.style.color = '#ff477e';
-                    }
-                    
-                    // 3. Win Condition Check
-                    if (playerClicks.length >= 5) { 
-                        clearInterval(syncBeatTimer);
-                        document.removeEventListener('click', handleSyncClick); 
-                        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
-                        syncMessage.style.color = 'white';
-                        setTimeout(goToStage2, 1500);
-                    }
-                }
+    // 1. Player Feedback: Apply profile flash
+    playerProfile.classList.add('flash');
+    setTimeout(() => {
+        playerProfile.classList.remove('flash');
+    }, 200);
+    
+    // 2. Synchronization Logic
+    if (difference <= syncThreshold) {
+        playerClicks.push('synced');
+        syncMessage.textContent = `✅ SYNCHRONIZED! (\${playerClicks.length} / 5)`;
+        syncMessage.style.color = '#00ffc8';
+    } else {
+        playerClicks = []; 
+        syncMessage.textContent = '❌ MISS! Try again!';
+        syncMessage.style.color = '#ff477e';
+    }
+    
+    // 3. Win Condition Check
+    if (playerClicks.length >= 5) { 
+        clearInterval(syncBeatTimer);
+        document.removeEventListener('click', handleSyncClick); 
+        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
+        syncMessage.style.color = 'white';
+        setTimeout(goToStage2, 1500);
+    }
+        }
 
                 function goToStage2() {
                     stage1.classList.remove('active');
