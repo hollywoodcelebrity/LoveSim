@@ -41,55 +41,65 @@
             .game-stage.active { display: flex; }
 
             /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
-            #profiles-container {
-                display: flex; align-items: flex-end; margin-bottom: 30px;
-            }
-            .profile-wrapper {
-                position: relative; 
-                width: 250px; 
-                height: 350px; 
-                margin: 0 15px;
-            }
-            .profile-image {
-                width: 100%; height: 100%; object-fit: contain;
-            }
+          /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
+#profiles-container {
+    display: flex;
+    justify-content: space-around; /* Use space-around to push profiles towards the sides */
+    width: 80vw; /* Make the container span 80% of the viewport width */
+    align-items: flex-end;
+    margin-bottom: 30px;
+}
 
-            /* 1. ANIMATION KEYFRAMES */
-            @keyframes brainPulse {
-                0% { 
-                    transform: scaleY(0.5); 
-                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
-                }
-                50% { 
-                    transform: scaleY(2.5); /* PEAK */
-                    box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
-                }
-                100% { 
-                    transform: scaleY(0.5); 
-                    box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
-                }
-            }
+.profile-wrapper {
+    position: relative;
+    width: 350px;      /* INCREASED: Make the images wider */
+    height: 450px;     /* INCREASED: Make the images taller */
+    margin: 0 10px;
+}
 
-            /* 2. WAVE STYLING AND PLACEMENT */
-            .brain-wave {
-                position: absolute;
-                top: 20%; 
-                left: 10%; 
-                width: 70%; 
-                height: 3px; 
-                background-color: #ff477e;
-                transform-origin: center;
-                animation: brainPulse 2s linear infinite; /* MATCHES 30 BPM (2s) */
-            }
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; 
+}
 
-            /* 3. PLAYER FEEDBACK (Flash on click) */
-            @keyframes playerFlash {
-                0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-                50% { box-shadow: 0 0 20px 5px #00ffc8; } 
-                100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-            }
-            #player-profile.flash { animation: playerFlash 0.2s ease-out; }
-            
+/* 1. ANIMATION KEYFRAMES (No change here) */
+@keyframes brainPulse {
+    0% { 
+        transform: scaleY(0.5); 
+        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
+    }
+    50% { 
+        transform: scaleY(2.5); /* PEAK */
+        box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
+    }
+    100% { 
+        transform: scaleY(0.5); 
+        box-shadow: 0 0 5px rgba(255, 71, 126, 0.2); 
+    }
+}
+
+/* 2. WAVE STYLING AND PLACEMENT */
+.brain-wave {
+    position: absolute;
+    /* You may need to adjust these values for your larger image: */
+    top: 25%;     
+    left: 15%;    
+    width: 60%;   
+    height: 3px;  
+    
+    background-color: #ff477e; 
+    transform-origin: center;
+    animation: brainPulse 2s linear infinite; 
+}
+
+/* 3. PLAYER FEEDBACK (Flash on click) */
+@keyframes playerFlash {
+    0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+    50% { box-shadow: 0 0 20px 5px #00ffc8; } 
+    100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+}
+#player-profile.flash { animation: playerFlash 0.2s ease-out; }
             /* --- GENERAL BUTTONS/MESSAGE STYLES --- */
             #pulse-button {
                 padding: 15px 30px; font-size: 1.2em; cursor: pointer;
