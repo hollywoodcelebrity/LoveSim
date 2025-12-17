@@ -44,19 +44,21 @@
 /* --- STAGE 1 STYLES (Image & Brainwaves) --- */
 #profiles-container {
     display: flex;
-    justify-content: space-between; /* Use space-between to push profiles right to the edges */
-    width: 95vw; /* Extremely wide container */
+    justify-content: space-between; /* Push profiles out */
+    width: 100vw; /* Take up the entire screen width */
+    height: 90vh; /* Allow room for title and button */
     align-items: flex-end;
-    margin-bottom: 30px;
+    /* Move container slightly down to account for title/button space */
+    margin-top: 50px; 
 }
 
 .profile-wrapper {
     position: relative;
-    width: 45vw;      /* HUGE INCREASE: Make the images take up 45% of the viewport width */
-    height: 70vh;     /* Make the images take up 70% of the viewport height */
-    margin: 0 10px;
-    /* Optional: Add a subtle glow so they stand out more */
-    filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
+    /* MAX SIZE: Each profile is nearly half the screen width and dominates height */
+    width: 49vw;      
+    height: 80vh;    
+    margin: 0; /* Remove margin to push them to the very edge */
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5)); /* Stronger glow */
 }
 
 .profile-image {
@@ -72,7 +74,7 @@
         box-shadow: 0 0 5px rgba(255, 71, 126, 0.2);
     }
     50% { 
-        transform: scaleY(2.5); /* PEAK */
+        transform: scaleY(2.5); 
         box-shadow: 0 0 15px 5px rgba(255, 71, 126, 0.9), 0 0 5px #ff477e; 
     }
     100% { 
@@ -84,7 +86,7 @@
 /* 2. WAVE STYLING AND PLACEMENT */
 .brain-wave {
     position: absolute;
-    /* WARNING: You MUST adjust these values based on your new, huge image size. */
+    /* 🚨 CRITICAL: You MUST adjust these values for your huge images: */
     top: 25%;     
     left: 15%;    
     width: 60%;   
@@ -102,6 +104,12 @@
     100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
 }
 #player-profile.flash { animation: playerFlash 0.2s ease-out; }
+
+/* 🚨 ALSO ADJUST: Make sure the main content is readable above the large images */
+#stage-1 h2, #stage-1 p, #pulse-button {
+    z-index: 10; /* Ensure text/button is on top of the images */
+    position: relative;
+}
             /* --- GENERAL BUTTONS/MESSAGE STYLES --- */
             #pulse-button {
                 padding: 15px 30px; font-size: 1.2em; cursor: pointer;
