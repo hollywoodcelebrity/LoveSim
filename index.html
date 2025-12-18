@@ -182,7 +182,18 @@
         }
 
         function run3DIntestine() {
-            stage2.innerHTML = `<div id="three-container" style="position:absolute; inset:0;"></div>`;
+            stage2.innerHTML = `
+                <div class="text-header-container" style="position:absolute; top:40px; left:40px; z-index:100;">
+                    <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
+                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: TRAVERSE // DOWN ARROW: RETRACT</p>
+                </div>
+                <div id="three-container" style="position:absolute; inset:0;"></div>
+                <div id="zoom-ui" style="position:absolute; bottom:40px; right:40px; background:rgba(255,255,255,0.9); padding:15px; border:1px solid black; z-index:100;">
+                    PENETRATION_DEPTH
+                    <div style="width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd;">
+                        <div id="zoom-bar-fill" style="width:0%; height:100%; background:#afeeee;"></div>
+                    </div>
+                </div>`;
             const container = document.getElementById("three-container");
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
             const camera = new THREE.PerspectiveCamera(85, window.innerWidth/window.innerHeight, 0.01, 3000);
@@ -194,34 +205,43 @@
                 const model = gltf.scene; const box = new THREE.Box3().setFromObject(model); const size = box.getSize(new THREE.Vector3());
                 model.position.sub(box.getCenter(new THREE.Vector3()));
                 model.rotation.y = (140 * Math.PI / 180); model.position.x -= 0.5; scene.add(model);
-                let z = -size.z * 0.15;
-                const onKey = (e) => {
+                let z = -size.z * 0.15, endZ = size.z * 1.5;
+                const zoomHandler = (e) => {
                     if (e.key === "ArrowUp") z += (size.z / 250);
-                    if (z >= size.z * 1.5) { window.removeEventListener("keydown", onKey); renderer.dispose(); renderMicrobeView(); }
+                    if (e.key === "ArrowDown") z -= (size.z / 250);
+                    if (z < -size.z * 0.15) z = -size.z * 0.15;
+                    const fill = document.getElementById("zoom-bar-fill");
+                    if(fill) fill.style.width = Math.min(100, Math.abs((z - (-size.z * 0.15)) / (endZ - (-size.z * 0.15))) * 100) + "%";
+                    if (z >= endZ) { window.removeEventListener("keydown", zoomHandler); renderer.dispose(); renderMicrobeView(); }
                 };
-                window.addEventListener("keydown", onKey);
-                function animate() { if (!stage2.classList.contains("active")) return; requestAnimationFrame(animate); camera.position.z = z; camera.lookAt(0,0,z+1); renderer.render(scene, camera); }
+                window.addEventListener("keydown", zoomHandler);
+                camera.position.z = z;
+                function animate() { if (!stage2.classList.contains("active")) return; requestAnimationFrame(animate); camera.position.z = z; camera.position.x = Math.sin(z * 0.1) * 0.2; camera.lookAt(0, 0, z + 1); renderer.render(scene, camera); }
                 animate();
             });
         }
 
         function renderMicrobeView() {
-            stage2.innerHTML = `<div id="microbe-full-container" style="position:absolute; inset:0;"></div>`;
-            const container = document.getElementById("microbe-full-container");
-            let mixed = 0;
+            stage2.innerHTML = `
+                <div class="text-header-container" style="position:absolute; top:40px; left:40px; z-index:100;">
+                    <h3>MIXING_MICROBIOTA</h3>
+                    <p style="opacity:0.6;">DRAG ELEMENTS TO THE CENTRAL CHANNEL</p>
+                </div>
+                <div id="microbe-full-container" style="position:absolute; inset:0;">
+                    <div style="position: absolute; left: 50%; top: 0; width: 20vw; height: 100vh; transform: translateX(-50%); border-left: 1px dashed rgba(0,0,0,0.1); border-right: 1px dashed rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); pointer-events: none;"></div>
+                </div>
+                <div id="mix-status-floating" style="position: absolute; bottom: 40px; left: 40px; background: rgba(255,255,255,0.9); border: 1px solid black; padding: 15px; font-weight: bold; z-index: 100;">MIX_STATUS: 0 / 10</div>`;
+            const containerFull = document.getElementById("microbe-full-container");
+            let mixedCount = 0;
             for (let i = 0; i < 20; i++) {
-                const m = document.createElement("div"); m.className = "microbe";
-                m.style.backgroundColor = i < 10 ? "#afeeee" : "#39ff14";
-                m.style.left = Math.random() * 90 + "vw"; m.style.top = Math.random() * 80 + "vh";
-                container.appendChild(m);
-
-                let startTime = Date.now() + Math.random() * 1000;
+                const m = document.createElement("div"); m.className = "microbe"; m.style.backgroundColor = (i < 10 ? "#afeeee" : "#39ff14"); m.id = "m-" + i;
+                m.style.left = (i < 10 ? Math.random()*30 : Math.random()*30 + 70) + "vw"; m.style.top = Math.random()*80 + 10 + "vh"; 
+                
+                let startTime = Date.now() + Math.random() * 2000;
                 function move() {
                     if (!m.parentNode) return;
                     let time = (Date.now() - startTime) * 0.001;
-                    let x = Math.sin(time * 0.7) * 20;
-                    let y = Math.cos(time * 0.5) * 20;
-                    m.style.transform = `translate(${x}px, ${y}px)`;
+                    m.style.transform = `translate(${Math.sin(time * 0.7) * 20}px, ${Math.cos(time * 0.5) * 20}px)`;
                     requestAnimationFrame(move);
                 }
                 move();
@@ -229,46 +249,53 @@
                 m.onmousedown = (e) => {
                     let moveHandler = (ev) => {
                         m.style.left = ev.clientX - 22 + "px"; m.style.top = ev.clientY - 22 + "px";
-                        if (!m.dataset.done && Math.abs(ev.clientX - window.innerWidth/2) < 100) {
-                            m.dataset.done = "true"; m.style.backgroundColor = "#333"; mixed++;
-                            if (mixed >= 10) setTimeout(initStage3, 800);
+                        if (!m.dataset.done && Math.abs(ev.clientX - window.innerWidth/2) < window.innerWidth * 0.1) {
+                            m.dataset.done = "true"; m.style.backgroundColor = "#333"; mixedCount++;
+                            document.getElementById("mix-status-floating").textContent = "MIX_STATUS: " + mixedCount + " / 10";
+                            if (mixedCount >= 10) setTimeout(initStage3, 800);
                         }
                     };
                     window.onmousemove = moveHandler;
                     window.onmouseup = () => window.onmousemove = null;
                 };
+                containerFull.appendChild(m);
             }
         }
 
         function initStage3() {
             stage2.classList.remove("active"); stage3.classList.add("active");
-            stage3.innerHTML = `<div id="vaso-tide"></div><h2 style="z-index:10; position:relative;">STAGE 3: VASODILATION</h2>`;
-            let p = 0;
+            stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2><p id="vaso-sub">RAPIDLY PULSE SPACEBAR</p></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
+            let presses = 0;
             const vasoSpaceHandler = (e) => {
-                if (e.code === "Space") {
-                    p++; triggerHeartbeat(0.5);
-                    document.getElementById("vaso-tide").style.height = (p/40)*100 + "%";
-                    if (p >= 40) { window.removeEventListener("keydown", vasoSpaceHandler); goToOxytocin(); }
+                if (e.code === "Space" && stage3.classList.contains("active")) {
+                    triggerHeartbeat(0.5);
+                    presses++; const pct = Math.min(100, (presses / 40) * 100);
+                    document.getElementById("vaso-tide").style.height = pct + "%";
+                    document.getElementById("heat-level").textContent = "SURGE: " + Math.round(pct) + "%";
+                    if (pct > 50) { document.getElementById("vaso-header").classList.add("inverted"); document.getElementById("heat-level").style.color = "white"; }
+                    if (presses >= 40) { window.removeEventListener("keydown", vasoSpaceHandler); goToOxytocin(); }
                 }
             };
             window.addEventListener("keydown", vasoSpaceHandler);
         }
 
         function goToOxytocin() {
+            const formula = "C43H66N12O12S2";
             stage3.innerHTML = `<div style="position:absolute; inset:0; background:black; z-index:1;"></div>
                 <div style="z-index:10; color:white; text-align:center;">
                     <h3>SYNTHESIS: OXYTOCIN</h3>
                     <input type="text" id="oxy" spellcheck="false" autocomplete="off" style="background:none; border:2px solid white; color:white; padding:10px; font-family:inherit; text-align:center; outline:none;">
-                    <p style="font-size:0.7em; margin-top:10px; opacity:0.5;">REQ: C43H66N12O12S2</p>
+                    <p style="font-size:0.7em; margin-top:10px; opacity:0.5;">REQ: ${formula}</p>
                 </div>`;
             const input = document.getElementById("oxy"); input.focus();
             document.onclick = () => { if (input) input.focus(); };
             input.oninput = (e) => {
-                if (e.target.value.toUpperCase() === "C43H66N12O12S2") {
+                if (e.target.value.toUpperCase() === formula) {
                     document.onclick = null;
                     stage3.classList.remove("active");
                     conclusion.classList.add("active");
-                    conclusion.innerHTML = `<div style="text-align:center"><h3>STATUS: STABILIZED</h3></div>`;
+                    conclusion.style.backgroundColor = "black";
+                    conclusion.innerHTML = `<div style="text-align:center; color:white;"><h3>STATUS: STABILIZED</h3></div>`;
                     setTimeout(() => {
                         conclusion.style.backgroundColor = "white";
                         conclusion.innerHTML = `<div class="final-declaration">YOU ARE IN LOVE.</div>`;
