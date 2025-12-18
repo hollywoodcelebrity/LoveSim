@@ -46,7 +46,7 @@
             }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
-            /* RADAR PULSE ANIMATIONS (BOTH SET TO 4S) */
+            /* SHARED RADAR ANIMATION */
             @keyframes radial-pulse {
                 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
                 100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
@@ -58,7 +58,7 @@
                 100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
             }
 
-            /* TARGET RINGS */
+            /* TARGET SIDE RINGS (ALWAYS RUNNING) */
             .profile-wrapper.target::before, .profile-wrapper.target::after {
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
@@ -73,14 +73,16 @@
                 animation: approach-circle 4s linear infinite; z-index: -1;
             }
 
-            /* PLAYER RIPPLE FX (NOW 4S LINEAR TO MATCH TARGET) */
-            #player-ripple-fx {
+            /* PLAYER SIDE RINGS (TRIGGERED BY CLICK) */
+            .player-ripple {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 2px solid #00ffc8;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
+            
             .ripple-active { animation: radial-pulse 4s linear forwards; }
+            #player-ripple-2 { animation-delay: 0.3s; } /* Slight offset for the second ring */
 
             #judgment-text {
                 font-size: 2.5em; font-weight: bold; height: 1.2em; margin-bottom: 10px;
@@ -106,11 +108,12 @@
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
                         <div id="judgment-text"></div>
-                        <p id="sync-message">The pace is slow. Match the player's ripple to the target's pulse.</p>
+                        <p id="sync-message">The pace is slow. Click to emit your ripples when the gray ring hits the center.</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player" class="profile-image">
-                                <div id="player-ripple-fx"></div>
+                                <div id="player-ripple-1" class="player-ripple"></div>
+                                <div id="player-ripple-2" class="player-ripple"></div>
                             </div>
                             <div class="profile-wrapper target" id="target-profile">
                                 <img src="target_profile.png" alt="Target" class="profile-image">
@@ -133,12 +136,14 @@
                     
                     const judgment = document.getElementById('judgment-text');
                     const scoreDisplay = document.getElementById('score-display');
-                    const ripple = document.getElementById('player-ripple-fx');
-
-                    // Reset and trigger player ripple
-                    ripple.classList.remove('ripple-active');
-                    void ripple.offsetWidth; 
-                    ripple.classList.add('ripple-active');
+                    
+                    // Trigger both Player Ripples
+                    const ripples = [document.getElementById('player-ripple-1'), document.getElementById('player-ripple-2')];
+                    ripples.forEach(r => {
+                        r.classList.remove('ripple-active');
+                        void r.offsetWidth; 
+                        r.classList.add('ripple-active');
+                    });
 
                     if (diff <= perfectThreshold) {
                         playerClicks.push('synced');
