@@ -20,7 +20,6 @@
         const cssContent = document.getElementById('game-style');
         const jsContent = document.getElementById('game-script');
         
-        // --- INJECTING CSS CONTENT ---
         cssContent.innerHTML = `
             body {
                 width: 100vw; height: 100vh;
@@ -47,16 +46,10 @@
             }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
-            /* TARGET RINGS ANIMATION */
+            /* RADAR PULSE ANIMATIONS (BOTH SET TO 4S) */
             @keyframes radial-pulse {
                 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
                 100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
-            }
-
-            /* PLAYER RIPPLE ANIMATION (MATCHED TO 2S PACE) */
-            @keyframes player-ripple {
-                0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; border-width: 3px; }
-                100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; border-width: 1px; }
             }
 
             @keyframes approach-circle {
@@ -70,47 +63,32 @@
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
                 border: 2px solid #ff477e; transform: translate(-50%, -50%) scale(0.1);
-                animation: radial-pulse 2s linear infinite; z-index: -1;
+                animation: radial-pulse 4s linear infinite; z-index: -1;
             }
-            .profile-wrapper.target::after { animation-delay: 1s; }
+            .profile-wrapper.target::after { animation-delay: 2s; }
 
             .approach-ring {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.2);
-                animation: approach-circle 2s linear infinite; z-index: -1;
+                animation: approach-circle 4s linear infinite; z-index: -1;
             }
 
-            /* PLAYER RIPPLE FX */
+            /* PLAYER RIPPLE FX (NOW 4S LINEAR TO MATCH TARGET) */
             #player-ripple-fx {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 2px solid #00ffc8;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
-            .ripple-active { animation: player-ripple 2s ease-out forwards; }
+            .ripple-active { animation: radial-pulse 4s linear forwards; }
 
             #judgment-text {
                 font-size: 2.5em; font-weight: bold; height: 1.2em; margin-bottom: 10px;
                 text-shadow: 0 0 5px rgba(0,0,0,0.1);
             }
             #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; color: #555; }
-            #score-display { color: #333; }
-
-            /* STAGE 2 & 3 STYLES */
-            #microbe-container {
-                width: 80%; max-width: 600px; aspect-ratio: 16 / 9; 
-                border: 2px solid #ccc; position: relative; background-color: #f9f9f9; 
-                margin-top: 20px;
-            }
-            .microbe.red { background-color: #ff6347; }
-            .microbe.blue { background-color: #4682b4; }
-            #heat-profiles {
-                width: 400px; height: 150px; max-width: 90%; position: relative;
-                background-color: #eee; margin: 20px 0; border: 1px solid #ccc;
-            }
         `;
 
-        // --- INJECTING JAVASCRIPT CONTENT ---
         jsContent.innerHTML = `
             document.addEventListener('DOMContentLoaded', () => {
                 const stage1 = document.getElementById('stage-1');
@@ -118,17 +96,17 @@
                 const stage3 = document.getElementById('stage-3');
                 const conclusion = document.getElementById('conclusion');
 
-                const targetInterval = 2000; 
+                const targetInterval = 4000; 
                 let playerClicks = [];
-                const perfectThreshold = 250; 
-                const goodThreshold = 500;
+                const perfectThreshold = 350; 
+                const goodThreshold = 650;
                 let lastTargetBeat = performance.now();
 
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
                         <div id="judgment-text"></div>
-                        <p id="sync-message">Click when the gray ring shrinks to the center!</p>
+                        <p id="sync-message">The pace is slow. Match the player's ripple to the target's pulse.</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player" class="profile-image">
@@ -157,7 +135,7 @@
                     const scoreDisplay = document.getElementById('score-display');
                     const ripple = document.getElementById('player-ripple-fx');
 
-                    // Trigger Player Ripple (Resetting animation)
+                    // Reset and trigger player ripple
                     ripple.classList.remove('ripple-active');
                     void ripple.offsetWidth; 
                     ripple.classList.add('ripple-active');
@@ -172,7 +150,7 @@
                         judgment.style.color = "#ffbb00";
                     } else {
                         playerClicks = []; 
-                        judgment.textContent = timeSinceLastBeat > 1000 ? "TOO EARLY" : "TOO LATE";
+                        judgment.textContent = timeSinceLastBeat > 2000 ? "TOO EARLY" : "TOO LATE";
                         judgment.style.color = "#ff477e";
                     }
 
@@ -196,12 +174,13 @@
                 }
 
                 function renderMicrobeView() {
-                    stage2.innerHTML = \`<h3>Mixing Microbiota (Drag to Center)</h3><div id="microbe-container"></div><p id="mix-status" style="color:#111;">Mixed: 0 / 10</p>\`;
+                    stage2.innerHTML = \`<h3>Mixing Microbiota (Drag to Center)</h3><div id="microbe-container" style="width:80%; max-width:600px; aspect-ratio:16/9; border:2px solid #ccc; position:relative; background:#f9f9f9; margin-top:20px;"></div><p id="mix-status">Mixed: 0 / 10</p>\`;
                     const container = document.getElementById('microbe-container');
                     let mixedCount = 0;
                     for (let i = 0; i < 20; i++) {
                         const m = document.createElement('div');
-                        m.className = 'microbe ' + (i < 10 ? 'red' : 'blue');
+                        m.style.cssText = "width:20px; height:20px; border-radius:50%; position:absolute; cursor:grab;";
+                        m.style.backgroundColor = (i < 10 ? '#ff6347' : '#4682b4');
                         m.id = 'microbe-' + i;
                         m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + '%';
                         m.style.top = Math.random()*85 + '%';
@@ -232,7 +211,7 @@
                 function initStage3() {
                     stage2.classList.remove('active');
                     stage3.classList.add('active');
-                    stage3.innerHTML = \`<h2>Stage 3: Vasodilation</h2><div id="heat-profiles"><div class="heat-overlay" id="heat-overlay"></div></div><p>Press SPACE repeatedly to heat up!</p><p id="heat-level">Heat: 0%</p>\`;
+                    stage3.innerHTML = \`<h2>Stage 3: Vasodilation</h2><div id="heat-profiles" style="width:400px; height:150px; background:#eee; margin:20px 0; border:1px solid #ccc; position:relative;"><div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div></div><p>Press SPACE repeatedly!</p><p id="heat-level">Heat: 0%</p>\`;
                     let presses = 0;
                     const spaceHandler = (e) => {
                         if (e.code === 'Space') {
@@ -251,14 +230,14 @@
 
                 function goToOxytocin() {
                     const formula = 'C43H66N12O12S2';
-                    stage3.innerHTML = \`<h3>Synthesis: Oxytocin</h3><p>Type the formula to release: <br><strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; font-size:1.2em; text-align:center;"><p id="oxy-status" style="color:#555;">Match the text exactly!</p>\`;
+                    stage3.innerHTML = \`<h3>Synthesis: Oxytocin</h3><p>Type: <strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; border:2px solid #333; text-align:center;"><p>Match text exactly!</p>\`;
                     const input = document.getElementById('oxy-input');
                     input.focus();
                     input.oninput = (e) => {
                         if (e.target.value.toUpperCase() === formula) {
                             stage3.classList.remove('active');
                             conclusion.classList.add('active');
-                            conclusion.innerHTML = "<h1 style='color:#ff477e;'>OXYTOCIN RELEASED!<br>YOU ARE IN LOVE!</h1>";
+                            conclusion.innerHTML = "<h1 style='color:#ff477e;'>YOU ARE IN LOVE!</h1>";
                         }
                     };
                 }
