@@ -180,14 +180,14 @@
                 const targetBPM = 30;
                 const targetInterval = 60000 / targetBPM; // 2000ms
                 let playerClicks = [];
-                const syncThreshold = 250; 
+                const syncThreshold = 500; 
                 let lastTargetBeat = performance.now();
                 let syncBeatTimer;
 
                 function initStage1() {
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
-                        <p>Click anywhere when the new pulse begins to emanate!</p>
+                        <p>Click anywhere when the new pulse begins to emanate.</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player Profile" class="profile-image">
@@ -234,11 +234,11 @@
                     // 2. Synchronization Logic
                     if (difference <= syncThreshold) {
                         playerClicks.push('synced');
-                        syncMessage.textContent = \`✅ SYNCHRONIZED! (\${playerClicks.length} / 5)\`;
+                        syncMessage.textContent = \`SYNCHRONIZED! (\${playerClicks.length} / 5)\`;
                         syncMessage.style.color = '#00ffc8';
                     } else {
                         playerClicks = []; 
-                        syncMessage.textContent = '❌ MISS! Try again!';
+                        syncMessage.textContent = 'MISS! Try again!';
                         syncMessage.style.color = '#ff477e';
                     }
                     
@@ -246,7 +246,7 @@
                     if (playerClicks.length >= 5) { 
                         clearInterval(syncBeatTimer);
                         document.removeEventListener('click', handleSyncClick); 
-                        syncMessage.textContent = '🧠 Brainwaves Matched! Commencing Stage 2...';
+                        syncMessage.textContent = 'Brainwaves Matched! Commencing Stage 2...';
                         syncMessage.style.color = 'white';
                         setTimeout(goToStage2, 1500);
                     }
