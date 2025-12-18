@@ -12,7 +12,7 @@
             margin: 0; background-color: white; color: black;
             font-family: "Source Code Pro", monospace; overflow: hidden; box-sizing: border-box;
         }
-        #game-container { width: 100%; height: 100%; position: relative; transition: transform 0.1s ease-out; }
+        #game-container { width: 100%; height: 100%; position: relative; }
         .game-stage {
             display: none; width: 100%; height: 100%; position: absolute;
             top: 0; left: 0; justify-content: center; align-items: center;
@@ -116,41 +116,27 @@
         const stage1 = document.getElementById("stage-1");
         const stage2 = document.getElementById("stage-2");
         const stage3 = document.getElementById("stage-3");
-        const container = document.getElementById("game-container");
         
-        // --- REFINED AUDIO ENGINE ---
         let audioCtx;
         function triggerHeartbeat(volume = 0.5) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            
             const now = audioCtx.currentTime;
-            
-            // First Beat
             const osc1 = audioCtx.createOscillator();
             const gain1 = audioCtx.createGain();
-            osc1.type = 'sine';
-            osc1.frequency.setValueAtTime(55, now);
+            osc1.type = 'sine'; osc1.frequency.setValueAtTime(55, now);
             osc1.frequency.exponentialRampToValueAtTime(0.01, now + 0.12);
-            gain1.gain.setValueAtTime(volume, now);
-            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            gain1.gain.setValueAtTime(volume, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc1.connect(gain1); gain1.connect(audioCtx.destination);
             osc1.start(); osc1.stop(now + 0.12);
 
-            // Second Beat
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
-            osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(40, now + 0.14);
+            osc2.type = 'sine'; osc2.frequency.setValueAtTime(40, now + 0.14);
             osc2.frequency.exponentialRampToValueAtTime(0.01, now + 0.28);
-            gain2.gain.setValueAtTime(volume * 0.6, now + 0.14);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+            gain2.gain.setValueAtTime(volume * 0.6, now + 0.14); gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
             osc2.connect(gain2); gain2.connect(audioCtx.destination);
             osc2.start(); osc2.stop(now + 0.28);
-
-            // Visual Thump
-            container.style.transform = "scale(1.02)";
-            setTimeout(() => { container.style.transform = "scale(1)"; }, 100);
         }
 
         const targetInterval = 4000; 
@@ -170,13 +156,17 @@
                 </div>
                 <h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>`;
             
-            setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
-            document.addEventListener("click", () => {
+            setInterval(() => { if (stage1.classList.contains("active")) lastTargetBeat = performance.now(); }, targetInterval);
+            
+            const stage1ClickListener = () => {
                 if (stage1.classList.contains("active")) {
                     triggerHeartbeat(0.4);
                     handleSyncClick();
+                } else {
+                    document.removeEventListener("click", stage1ClickListener);
                 }
-            });
+            };
+            document.addEventListener("click", stage1ClickListener);
         }
 
         function handleSyncClick() {
@@ -209,13 +199,14 @@
                 const model = gltf.scene; const box = new THREE.Box3().setFromObject(model); const size = box.getSize(new THREE.Vector3()); model.position.sub(box.getCenter(new THREE.Vector3()));
                 model.rotation.y = (140 * Math.PI / 180); model.position.x -= 0.5; scene.add(model);
                 let startZ = -size.z * 0.15, endZ = size.z * 1.5, currentZoom = startZ;
-                window.addEventListener("keydown", (e) => {
+                const zoomHandler = (e) => {
                     if (e.key === "ArrowUp") currentZoom += (size.z / 250); if (e.key === "ArrowDown") currentZoom -= (size.z / 250);
                     if (currentZoom < startZ) currentZoom = startZ;
                     const fill = document.getElementById("zoom-bar-fill");
                     if(fill) fill.style.width = Math.min(100, Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100) + "%";
-                    if (currentZoom >= endZ) { renderer.dispose(); renderMicrobeView(); }
-                });
+                    if (currentZoom >= endZ) { window.removeEventListener("keydown", zoomHandler); renderer.dispose(); renderMicrobeView(); }
+                };
+                window.addEventListener("keydown", zoomHandler);
                 camera.position.z = startZ;
                 function animate() { if (!stage2.classList.contains("active")) return; requestAnimationFrame(animate); camera.position.z = currentZoom; camera.position.x = Math.sin(currentZoom * 0.1) * 0.2; camera.lookAt(0, 0, currentZoom + 1); renderer.render(scene, camera); }
                 animate();
@@ -247,27 +238,29 @@
             stage2.classList.remove("active"); stage3.classList.add("active");
             stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2><p id="vaso-sub">RAPIDLY PULSE SPACEBAR</p></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
             let presses = 0;
-            document.addEventListener("keydown", (e) => {
+            const vasoSpaceHandler = (e) => {
                 if (e.code === "Space" && stage3.classList.contains("active")) {
                     triggerHeartbeat(0.5);
                     presses++; const pct = Math.min(100, (presses / 40) * 100);
                     document.getElementById("vaso-tide").style.height = pct + "%";
                     document.getElementById("heat-level").textContent = "SURGE: " + Math.round(pct) + "%";
                     if (pct > 50) { document.getElementById("vaso-header").classList.add("inverted"); document.getElementById("heat-level").style.color = "white"; }
-                    if (presses >= 40) goToOxytocin();
+                    if (presses >= 40) { document.removeEventListener("keydown", vasoSpaceHandler); goToOxytocin(); }
                 }
-            });
+            };
+            document.addEventListener("keydown", vasoSpaceHandler);
         }
 
         function goToOxytocin() {
-            stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: C43H66N12O12S2</p></div>`;
+            const formula = "C43H66N12O12S2";
+            stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: ${formula}</p></div>`;
             const input = document.getElementById("oxy-input"); input.focus();
             input.oninput = (e) => {
-                if (e.target.value.toUpperCase() === "C43H66N12O12S2") {
+                if (e.target.value.toUpperCase() === formula) {
                     triggerHeartbeat(1.0);
                     document.getElementById("conclusion").classList.add("active");
                     stage3.classList.remove("active");
-                    document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>";
+                    document.getElementById("conclusion").innerHTML = "<h2 style='text-align:center;'>OXYTOCIN_RELEASED<br>NEURAL_BOND_STABILIZED<br>PROCESS_COMPLETE</h2>";
                 }
             };
         }
