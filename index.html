@@ -21,64 +21,30 @@
         }
         .game-stage.active { display: flex; }
 
-        .text-header-container {
-            width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
-            z-index: 100; pointer-events: none;
+        /* Stage 1 Outlines */
+        .profile-wrapper { 
+            position: relative; width: 35vw; height: 55vh; 
+            background-size: contain; background-repeat: no-repeat; background-position: center;
         }
 
-        #profiles-container {
-            display: flex; justify-content: space-around; 
-            width: 90vw; height: 60vh; align-items: flex-end;
-            margin-top: auto;
-        }
-        .profile-wrapper { position: relative; width: 35vw; height: 55vh; }
-        .profile-image { width: 100%; height: 100%; object-fit: contain; }
-        
-        @keyframes radial-pulse {
-            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
-            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
-        }
-        @keyframes approach-circle {
-            0% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-            20% { opacity: 0.4; }
-            100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
-        }
-
-        .profile-wrapper.target::before, .profile-wrapper.target::after {
-            content: ''; position: absolute; top: 50%; left: 50%;
-            width: 100%; height: 100%; border-radius: 50%;
-            border: 3px solid #39ff14; transform: translate(-50%, -50%) scale(0.1);
-            animation: radial-pulse 4s linear infinite; z-index: -1;
-            filter: drop-shadow(0 0 5px #39ff14);
-        }
-        .profile-wrapper.target::after { animation-delay: 2s; }
-
-        .player-ripple {
-            position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-            border-radius: 50%; border: 3px solid #afeeee;
-            transform: translate(-50%, -50%) scale(0.1);
-            opacity: 0; pointer-events: none; z-index: -1;
-        }
-        .ripple-active { animation: radial-pulse 4s linear forwards; }
-
-        #three-container, #microbe-full-container { 
-            position: absolute; top: 0; left: 0;
-            width: 100vw; height: 100vh; 
-            background: white; z-index: 1;
-        }
-
+        /* Microbes: Thinner borders and organic movement */
         .microbe { 
             width: 45px; height: 45px; border-radius: 50%; 
-            position: absolute; cursor: grab; border: 2px solid black; 
-            transition: background-color 0.3s, transform 0.1s; 
+            position: absolute; cursor: grab; border: 1px solid black; 
             z-index: 10;
-            animation: microbe-float 6s ease-in-out infinite;
+            transition: background-color 0.3s;
         }
-        @keyframes microbe-float {
-            0%, 100% { transform: translate(0, 0); }
-            25% { transform: translate(10px, -15px); }
-            50% { transform: translate(-5px, 10px); }
-            75% { transform: translate(15px, 5px); }
+
+        /* Final Stage: Minimalist */
+        .final-declaration {
+            color: #39ff14;
+            font-size: 5rem;
+            font-weight: 700;
+            text-align: center;
+            animation: slow-blink 2s steps(2, start) infinite;
+        }
+        @keyframes slow-blink {
+            to { visibility: hidden; }
         }
 
         #vaso-tide {
@@ -87,22 +53,6 @@
             background: black;
             transition: height 0.3s ease-out;
             z-index: 5;
-        }
-        .vaso-ui-layer { z-index: 10; color: black; transition: color 0.3s; }
-        .vaso-ui-layer.inverted { color: white; }
-
-        /* FINAL SLOW FLASHING TEXT */
-        @keyframes neon-flash-slow {
-            0%, 100% { opacity: 1; filter: drop-shadow(0 0 25px #39ff14); }
-            50% { opacity: 0.2; filter: drop-shadow(0 0 5px #39ff14); }
-        }
-        .final-declaration {
-            color: #39ff14;
-            font-size: 5rem;
-            font-weight: 700;
-            text-align: center;
-            margin-top: 2rem;
-            animation: neon-flash-slow 2s ease-in-out infinite;
         }
     </style>
 </head>
@@ -144,150 +94,136 @@
             gain1.gain.setValueAtTime(volume, now); gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
             osc1.connect(gain1); gain1.connect(audioCtx.destination);
             osc1.start(); osc1.stop(now + 0.12);
-
-            const osc2 = audioCtx.createOscillator();
-            const gain2 = audioCtx.createGain();
-            osc2.type = 'sine'; osc2.frequency.setValueAtTime(40, now + 0.14);
-            osc2.frequency.exponentialRampToValueAtTime(0.01, now + 0.28);
-            gain2.gain.setValueAtTime(volume * 0.6, now + 0.14); gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
-            osc2.connect(gain2); gain2.connect(audioCtx.destination);
-            osc2.start(); osc2.stop(now + 0.28);
         }
-
-        const targetInterval = 4000; 
-        let playerClicks = [];
-        let lastTargetBeat = performance.now();
-
-        const stage1ClickListener = () => {
-            if (stage1.classList.contains("active")) {
-                triggerHeartbeat(0.4);
-                handleSyncClick();
-            }
-        };
 
         function initStage1() {
             stage1.innerHTML = `
-                <div class="text-header-container">
+                <div class="text-header-container" style="z-index:100">
                     <h2>STAGE 1: NEURAL_SYNC</h2>
                     <div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div>
-                    <p>CLICK WHEN NEON RINGS HIT CENTER</p>
                 </div>
-                <div id="profiles-container">
-                    <div class="profile-wrapper" id="player-profile"><img src="player_profile.png" class="profile-image"><div id="player-ripple-1" class="player-ripple"></div></div>
-                    <div class="profile-wrapper target" id="target-profile"><img src="target_profile.png" class="profile-image"><div class="approach-ring" style="position: absolute; top: 50%; left: 50%; width: 100%; height: 100%; border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1); animation: approach-circle 4s linear infinite; z-index: -1;"></div></div>
-                </div>
-                <h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>`;
+                <div id="profiles-container" style="display:flex; width:90vw; justify-content:space-around; align-items:flex-end;">
+                    <div class="profile-wrapper" id="p1" style="background-image:url('player_profile.png')">
+                        <div id="ripple" style="position:absolute; top:50%; left:50%; width:100%; height:100%; border:3px solid #afeeee; border-radius:50%; transform:translate(-50%,-50%) scale(0); opacity:0;"></div>
+                    </div>
+                    <div class="profile-wrapper" id="p2" style="background-image:url('target_profile.png')">
+                        <div style="position:absolute; top:50%; left:50%; width:100%; height:100%; border:3px solid #39ff14; border-radius:50%; transform:translate(-50%,-50%); animation: radial-pulse 4s infinite;"></div>
+                    </div>
+                </div>`;
             
-            setInterval(() => { if (stage1.classList.contains("active")) lastTargetBeat = performance.now(); }, targetInterval);
-            document.addEventListener("click", stage1ClickListener);
-        }
-
-        function handleSyncClick() {
-            const diff = Math.min((performance.now() - lastTargetBeat) % targetInterval, targetInterval - ((performance.now() - lastTargetBeat) % targetInterval));
-            const ripple = document.getElementById("player-ripple-1");
-            if(ripple) { ripple.classList.remove("ripple-active"); void ripple.offsetWidth; ripple.classList.add("ripple-active"); }
-            if (diff <= 500) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; }
-            else { playerClicks = []; document.getElementById("judgment-text").textContent = "STATUS: MISSED"; }
-            document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
-            if (playerClicks.length >= 5) { 
-                document.removeEventListener("click", stage1ClickListener);
-                setTimeout(initStage2, 1000); 
-            }
+            let count = 0;
+            document.onclick = () => {
+                if (!stage1.classList.contains("active")) return;
+                triggerHeartbeat(0.4);
+                const r = document.getElementById('ripple');
+                r.style.transition = 'none'; r.style.transform = 'translate(-50%,-50%) scale(0)'; r.style.opacity = '1';
+                void r.offsetWidth;
+                r.style.transition = 'all 0.5s ease-out'; r.style.transform = 'translate(-50%,-50%) scale(2)'; r.style.opacity = '0';
+                count++;
+                if (count >= 5) setTimeout(initStage2, 1000);
+            };
         }
 
         function initStage2() {
             stage1.classList.remove("active");
             stage2.classList.add("active");
-            stage2.innerHTML = `<div class="text-header-container"><h2>STAGE 2: MICROBIAL_EXCHANGE</h2></div><div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold; background: white; z-index: 100;">INIT_ZOOM</div>`;
+            stage2.innerHTML = `<div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>`;
             document.getElementById("zoom-bullseye").onclick = run3DIntestine;
         }
 
         function run3DIntestine() {
-            stage2.innerHTML = `<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div><div id="zoom-ui" style="position:absolute; bottom:40px; right:40px; background:rgba(255,255,255,0.9); padding:15px; border:1px solid black; z-index:100;">PENETRATION_DEPTH<div style="width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd;"><div id="zoom-bar-fill" style="width:0%; height:100%; background:#afeeee;"></div></div></div>`;
-            const container3d = document.getElementById("three-container");
+            stage2.innerHTML = `<div id="three-container" style="position:absolute; inset:0;"></div>`;
+            const container = document.getElementById("three-container");
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
-            const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.01, 3000);
+            const camera = new THREE.PerspectiveCamera(85, window.innerWidth/window.innerHeight, 0.01, 3000);
             const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight);
-            container3d.appendChild(renderer.domElement);
+            container.appendChild(renderer.domElement);
             scene.add(new THREE.AmbientLight(0xffffff, 3.5));
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
-                const model = gltf.scene; const box = new THREE.Box3().setFromObject(model); const size = box.getSize(new THREE.Vector3()); model.position.sub(box.getCenter(new THREE.Vector3()));
+                const model = gltf.scene; const box = new THREE.Box3().setFromObject(model); const size = box.getSize(new THREE.Vector3());
+                model.position.sub(box.getCenter(new THREE.Vector3()));
                 model.rotation.y = (140 * Math.PI / 180); model.position.x -= 0.5; scene.add(model);
-                let startZ = -size.z * 0.15, endZ = size.z * 1.5, currentZoom = startZ;
-                const zoomHandler = (e) => {
-                    if (e.key === "ArrowUp") currentZoom += (size.z / 250); if (e.key === "ArrowDown") currentZoom -= (size.z / 250);
-                    if (currentZoom < startZ) currentZoom = startZ;
-                    const fill = document.getElementById("zoom-bar-fill");
-                    if(fill) fill.style.width = Math.min(100, Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100) + "%";
-                    if (currentZoom >= endZ) { window.removeEventListener("keydown", zoomHandler); renderer.dispose(); renderMicrobeView(); }
+                let z = -size.z * 0.15;
+                const onKey = (e) => {
+                    if (e.key === "ArrowUp") z += (size.z / 250);
+                    if (z >= size.z * 1.5) { window.removeEventListener("keydown", onKey); renderer.dispose(); renderMicrobeView(); }
                 };
-                window.addEventListener("keydown", zoomHandler);
-                camera.position.z = startZ;
-                function animate() { if (!stage2.classList.contains("active")) return; requestAnimationFrame(animate); camera.position.z = currentZoom; camera.position.x = Math.sin(currentZoom * 0.1) * 0.2; camera.lookAt(0, 0, currentZoom + 1); renderer.render(scene, camera); }
+                window.addEventListener("keydown", onKey);
+                function animate() { if (!stage2.classList.contains("active")) return; requestAnimationFrame(animate); camera.position.z = z; camera.lookAt(0,0,z+1); renderer.render(scene, camera); }
                 animate();
             });
         }
 
         function renderMicrobeView() {
-            stage2.innerHTML = `<div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div><div id="microbe-full-container"><div style="position: absolute; left: 50%; top: 0; width: 20vw; height: 100vh; transform: translateX(-50%); border-left: 1px dashed rgba(0,0,0,0.1); border-right: 1px dashed rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); pointer-events: none;"></div></div><div id="mix-status-floating" style="position: absolute; bottom: 40px; left: 40px; background: rgba(255,255,255,0.9); border: 1px solid black; padding: 15px; font-weight: bold; z-index: 100;">MIX_STATUS: 0 / 10</div>`;
-            const containerFull = document.getElementById("microbe-full-container");
-            let mixedCount = 0;
+            stage2.innerHTML = `<div id="microbe-full-container" style="position:absolute; inset:0;"></div>`;
+            const container = document.getElementById("microbe-full-container");
+            let mixed = 0;
             for (let i = 0; i < 20; i++) {
-                const m = document.createElement("div"); m.className = "microbe"; m.style.backgroundColor = (i < 10 ? "#afeeee" : "#39ff14"); m.id = "m-" + i;
-                m.style.left = (i < 10 ? Math.random()*30 : Math.random()*30 + 70) + "vw"; m.style.top = Math.random()*80 + 10 + "vh"; m.draggable = true;
-                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id); containerFull.appendChild(m);
-            }
-            containerFull.ondragover = (e) => e.preventDefault();
-            containerFull.ondrop = (e) => {
-                const el = document.getElementById(e.dataTransfer.getData("text"));
-                el.style.left = (e.clientX - 22) + 'px'; el.style.top = (e.clientY - 22) + 'px';
-                if (!el.dataset.isMixed && Math.abs(e.clientX - window.innerWidth/2) < window.innerWidth * 0.1) {
-                    el.style.backgroundColor = "#333"; el.dataset.isMixed = "true"; mixedCount++;
-                    document.getElementById("mix-status-floating").textContent = "MIX_STATUS: " + mixedCount + " / 10";
-                    if (mixedCount >= 10) setTimeout(initStage3, 800);
+                const m = document.createElement("div"); m.className = "microbe";
+                m.style.backgroundColor = i < 10 ? "#afeeee" : "#39ff14";
+                m.style.left = Math.random() * 90 + "vw"; m.style.top = Math.random() * 80 + "vh";
+                container.appendChild(m);
+
+                // Organic Movement Logic
+                let startTime = Date.now() + Math.random() * 1000;
+                function move() {
+                    if (!m.parentNode) return;
+                    let time = (Date.now() - startTime) * 0.001;
+                    let x = Math.sin(time * 0.7) * 20;
+                    let y = Math.cos(time * 0.5) * 20;
+                    m.style.transform = `translate(${x}px, ${y}px)`;
+                    requestAnimationFrame(move);
                 }
-            };
+                move();
+
+                m.onmousedown = (e) => {
+                    let moveHandler = (ev) => {
+                        m.style.left = ev.clientX - 22 + "px"; m.style.top = ev.clientY - 22 + "px";
+                        if (!m.dataset.done && Math.abs(ev.clientX - window.innerWidth/2) < 100) {
+                            m.dataset.done = "true"; m.style.backgroundColor = "#333"; mixed++;
+                            if (mixed >= 10) setTimeout(initStage3, 800);
+                        }
+                    };
+                    window.onmousemove = moveHandler;
+                    window.onmouseup = () => window.onmousemove = null;
+                };
+            }
         }
 
         function initStage3() {
             stage2.classList.remove("active"); stage3.classList.add("active");
-            stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2><p id="vaso-sub">RAPIDLY PULSE SPACEBAR</p></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
-            let presses = 0;
-            const vasoSpaceHandler = (e) => {
-                if (e.code === "Space" && stage3.classList.contains("active")) {
-                    triggerHeartbeat(0.5);
-                    presses++; const pct = Math.min(100, (presses / 40) * 100);
-                    document.getElementById("vaso-tide").style.height = pct + "%";
-                    document.getElementById("heat-level").textContent = "SURGE: " + Math.round(pct) + "%";
-                    if (pct > 50) { document.getElementById("vaso-header").classList.add("inverted"); document.getElementById("heat-level").style.color = "white"; }
-                    if (presses >= 40) { document.removeEventListener("keydown", vasoSpaceHandler); goToOxytocin(); }
+            stage3.innerHTML = `<div id="vaso-tide"></div><h2 style="z-index:10; position:relative;">STAGE 3: VASODILATION</h2>`;
+            let p = 0;
+            window.onkeydown = (e) => {
+                if (e.code === "Space") {
+                    p++; triggerHeartbeat(0.5);
+                    document.getElementById("vaso-tide").style.height = (p/40)*100 + "%";
+                    if (p >= 40) { window.onkeydown = null; goToOxytocin(); }
                 }
             };
-            document.addEventListener("keydown", vasoSpaceHandler);
         }
 
         function goToOxytocin() {
-            const formula = "C43H66N12O12S2";
-            stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div id="final-ui" class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px; z-index:100; position:relative;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: ${formula}</p></div>`;
-            const input = document.getElementById("oxy-input"); 
-            input.focus();
-            
-            document.onclick = () => { if (input) input.focus(); };
-
+            stage3.innerHTML = `<div style="position:absolute; inset:0; background:black; z-index:1;"></div>
+                <div style="z-index:10; color:white; text-align:center;">
+                    <h3>SYNTHESIS: OXYTOCIN</h3>
+                    <input type="text" id="oxy" style="background:none; border:2px solid white; color:white; padding:10px; font-family:inherit; text-align:center; outline:none;">
+                    <p style="font-size:0.7em; margin-top:10px; opacity:0.5;">REQ: C43H66N12O12S2</p>
+                </div>`;
+            const input = document.getElementById("oxy"); input.focus();
+            document.onclick = () => input.focus();
             input.oninput = (e) => {
-                if (e.target.value.toUpperCase() === formula) {
-                    triggerHeartbeat(1.0);
+                if (e.target.value.toUpperCase() === "C43H66N12O12S2") {
                     stage3.classList.remove("active");
                     conclusion.classList.add("active");
-                    conclusion.innerHTML = `
-                        <div style="text-align:center;">
-                            <h2>OXYTOCIN_RELEASED</h2>
-                            <h2>NEURAL_BOND_STABILIZED</h2>
-                            <h2>PROCESS_COMPLETE</h2>
-                            <div class="final-declaration">YOU ARE IN LOVE.</div>
-                        </div>
-                    `;
+                    conclusion.innerHTML = `<div style="text-align:center"><h3>STATUS: STABILIZED</h3></div>`;
+                    
+                    // Final transition to blank white screen
+                    setTimeout(() => {
+                        conclusion.style.backgroundColor = "white";
+                        conclusion.innerHTML = `<div class="final-declaration">YOU ARE IN LOVE.</div>`;
+                    }, 2500);
                 }
             };
         }
