@@ -23,6 +23,7 @@
 
         .text-header-container {
             width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
+            z-index: 10;
         }
 
         #profiles-container {
@@ -65,12 +66,22 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: white; position: relative;}
-        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: black; background: rgba(255,255,255,0.9); padding: 10px; border: 1px solid black; font-size: 0.8em; pointer-events: none; z-index: 100;}
-        #zoom-bar-container { width: 120px; height: 4px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
+        /* FULLSCREEN 3D VIEWPORT */
+        #three-container { 
+            position: absolute; top: 0; left: 0;
+            width: 100vw; height: 100vh; 
+            background: white; z-index: 1;
+        }
+        #zoom-ui { 
+            position: absolute; bottom: 40px; right: 40px; 
+            color: black; background: rgba(255,255,255,0.9); 
+            padding: 15px; border: 1px solid black; font-size: 0.9em; 
+            pointer-events: none; z-index: 100;
+        }
+        #zoom-bar-container { width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
         #zoom-bar-fill { width: 0%; height: 100%; background: #fbcce7; transition: width 0.1s; }
 
-        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; }
+        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; z-index: 5; }
         .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
     </style>
 </head>
@@ -107,7 +118,7 @@
                 <div class="text-header-container">
                     <h2>STAGE 1: NEURAL_SYNC</h2>
                     <div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div>
-                    <p style="font-size:1em; opacity:0.7;">CLICK WHEN OUTER_RING HITS CENTER</p>
+                    <p id="sync-message">CLICK WHEN OUTER_RING HITS CENTER</p>
                 </div>
                 <div id="profiles-container">
                     <div class="profile-wrapper" id="player-profile">
@@ -158,7 +169,7 @@
                 <div class="text-header-container">
                     <h2>STAGE 2: MICROBIAL_EXCHANGE</h2>
                 </div>
-                <div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>`;
+                <div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold; background: white; z-index: 10;">INIT_ZOOM</div>`;
             document.getElementById("zoom-bullseye").onclick = run3DIntestine;
         }
 
@@ -166,45 +177,42 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">HOLD UP ARROW TO TRAVERSE CURVED TISSUE</p>
+                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: PENETRATE // DOWN ARROW: RETRACT</p>
                 </div>
-                <div id="three-container">
-                    <div id="zoom-ui">
-                        PENETRATION_DEPTH
-                        <div id="zoom-bar-container"><div id="zoom-bar-fill"></div></div>
-                    </div>
+                <div id="three-container"></div>
+                <div id="zoom-ui">
+                    PENETRATION_DEPTH
+                    <div id="zoom-bar-container"><div id="zoom-bar-fill"></div></div>
                 </div>`;
-            const container = document.getElementById("three-container");
             
+            const container = document.getElementById("three-container");
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xffffff);
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 2000);
+            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 2000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 2.8); 
+            const ambient = new THREE.AmbientLight(0xffffff, 3.0); 
             scene.add(ambient);
-            const light = new THREE.PointLight(0xffffff, 15);
-            scene.add(light);
+            const pointLight = new THREE.PointLight(0xffffff, 20);
+            scene.add(pointLight);
 
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
                 const model = gltf.scene;
-                
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Rotated Left by adjusting from 165 to 140 degrees & Nudged X left
                 model.rotation.y = (140 * Math.PI / 180); 
                 model.position.x -= 0.5;
                 scene.add(model);
 
-                // START AT THE OTHER OPENING (Positive Z instead of Negative)
-                let startZ = -size.z * 0.8;
-                let endZ = size.z * 0.8;
+                // START POSITION: Now very close to the opening
+                let startZ = -size.z * 0.45; 
+                let endZ = size.z * 0.6;
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
@@ -221,9 +229,8 @@
                 }
 
                 function handleKeyZoom(e) {
-                    // Reversed keys to match the new direction
-                    if (e.key === "ArrowUp") updateZoom(size.z / 80); 
-                    if (e.key === "ArrowDown") updateZoom(-(size.z / 80));
+                    if (e.key === "ArrowUp") updateZoom(size.z / 100); 
+                    if (e.key === "ArrowDown") updateZoom(-(size.z / 100));
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
@@ -234,12 +241,10 @@
                     requestAnimationFrame(animate);
                     
                     camera.position.z = currentZoom;
-                    // ACCOUNT FOR CURVE: Shift camera X based on Z position to follow curve
-                    // This assumes a gentle arc to the right as it goes forward
-                    camera.position.x = Math.sin(currentZoom * 0.5) * 0.8;
+                    camera.position.x = Math.sin(currentZoom * 0.5) * 0.6;
+                    camera.lookAt(camera.position.x * 1.2, 0, currentZoom + 1);
                     
-                    camera.lookAt(camera.position.x * 1.5, 0, currentZoom + 2);
-                    light.position.copy(camera.position);
+                    pointLight.position.copy(camera.position);
                     renderer.render(scene, camera);
                 }
                 animate();
