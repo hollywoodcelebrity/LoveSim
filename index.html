@@ -66,7 +66,6 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        /* FULLSCREEN 3D VIEWPORT */
         #three-container { 
             position: absolute; top: 0; left: 0;
             width: 100vw; height: 100vh; 
@@ -118,7 +117,7 @@
                 <div class="text-header-container">
                     <h2>STAGE 1: NEURAL_SYNC</h2>
                     <div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div>
-                    <p id="sync-message">CLICK WHEN OUTER_RING HITS CENTER</p>
+                    <p>CLICK WHEN OUTER_RING HITS CENTER</p>
                 </div>
                 <div id="profiles-container">
                     <div class="profile-wrapper" id="player-profile">
@@ -177,7 +176,7 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: PENETRATE // DOWN ARROW: RETRACT</p>
+                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: DIVE DEEPER // DOWN ARROW: RETRACT</p>
                 </div>
                 <div id="three-container"></div>
                 <div id="zoom-ui">
@@ -188,14 +187,15 @@
             const container = document.getElementById("three-container");
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xffffff);
-            const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 2000);
+            // Wider FOV for internal feel
+            const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.01, 3000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 3.0); 
+            const ambient = new THREE.AmbientLight(0xffffff, 3.5); 
             scene.add(ambient);
-            const pointLight = new THREE.PointLight(0xffffff, 20);
+            const pointLight = new THREE.PointLight(0xffffff, 25);
             scene.add(pointLight);
 
             const loader = new GLTFLoader();
@@ -206,13 +206,14 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
+                // Alignment based on your request
                 model.rotation.y = (140 * Math.PI / 180); 
                 model.position.x -= 0.5;
                 scene.add(model);
 
-                // START POSITION: Now very close to the opening
-                let startZ = -size.z * 0.45; 
-                let endZ = size.z * 0.6;
+                // ULTRA TIGHT START: Beginning significantly closer
+                let startZ = -size.z * 0.15; 
+                let endZ = size.z * 1.1; // Ends much further
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
@@ -229,8 +230,8 @@
                 }
 
                 function handleKeyZoom(e) {
-                    if (e.key === "ArrowUp") updateZoom(size.z / 100); 
-                    if (e.key === "ArrowDown") updateZoom(-(size.z / 100));
+                    if (e.key === "ArrowUp") updateZoom(size.z / 120); 
+                    if (e.key === "ArrowDown") updateZoom(-(size.z / 120));
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
@@ -241,8 +242,9 @@
                     requestAnimationFrame(animate);
                     
                     camera.position.z = currentZoom;
-                    camera.position.x = Math.sin(currentZoom * 0.5) * 0.6;
-                    camera.lookAt(camera.position.x * 1.2, 0, currentZoom + 1);
+                    // Follow curve
+                    camera.position.x = Math.sin(currentZoom * 0.3) * 0.7;
+                    camera.lookAt(camera.position.x * 1.5, 0, currentZoom + 1.5);
                     
                     pointLight.position.copy(camera.position);
                     renderer.render(scene, camera);
