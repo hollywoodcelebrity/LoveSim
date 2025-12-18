@@ -65,10 +65,10 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: #0a0a0a; position: relative;}
-        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid white; font-size: 0.8em; pointer-events: none; }
-        #zoom-bar-container { width: 100%; height: 4px; background: #333; margin-top: 10px; }
-        #zoom-bar-fill { width: 0%; height: 100%; background: #afeeee; transition: width 0.1s; }
+        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: white; position: relative;}
+        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: black; background: rgba(255,255,255,0.8); padding: 10px; border: 1px solid black; font-size: 0.8em; pointer-events: none; }
+        #zoom-bar-container { width: 100%; height: 4px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
+        #zoom-bar-fill { width: 0%; height: 100%; background: #fbcce7; transition: width 0.1s; }
 
         #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; }
         .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
@@ -166,28 +166,29 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">USE UP/DOWN ARROWS TO NAVIGATE TISSUE LAYERS</p>
+                    <p style="font-size:0.8em; opacity:0.7;">USE UP ARROW TO DIVE DEEPER INTO TISSUE</p>
                 </div>
                 <div id="three-container">
                     <div id="zoom-ui">
-                        ZOOM_DEPTH
+                        PENETRATION_DEPTH
                         <div id="zoom-bar-container"><div id="zoom-bar-fill"></div></div>
                     </div>
                 </div>`;
             const container = document.getElementById("three-container");
             
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050505);
-            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            scene.background = new THREE.Color(0xffffff); // White background
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.01, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 1.8); 
+            // Boosted Interior Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 2.0); 
             scene.add(ambient);
-            const light = new THREE.DirectionalLight(0xffffff, 2);
-            light.position.set(0, 10, 10);
-            scene.add(light);
+            const internalLight = new THREE.PointLight(0xffffff, 5);
+            internalLight.position.set(0, 0, 0);
+            scene.add(internalLight);
 
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
@@ -196,20 +197,21 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // ADJUSTED ROTATION: 90 + 75 degrees
-                model.rotation.y = (Math.PI / 2) + (75 * Math.PI / 180); 
+                // Rotated to your specified 165 degrees (90 + 75)
+                model.rotation.y = (165 * Math.PI / 180); 
                 
                 scene.add(model);
                 
-                let currentZoom = 12;
-                const startZoom = 12;
-                const targetZoom = 3.2;
+                // Start camera ALMOST at the center to appear "inside"
+                let currentZoom = 0.5;
+                const startZoom = 0.5;
+                const targetZoom = -1.5; // Moving forward through the model
 
                 function updateZoom(delta) {
-                    currentZoom = Math.max(targetZoom, Math.min(startZoom, currentZoom + delta));
-                    const progress = ((startZoom - currentZoom) / (startZoom - targetZoom)) * 100;
+                    currentZoom += delta;
+                    const progress = Math.abs((currentZoom - startZoom) / (targetZoom - startZoom)) * 100;
                     const fill = document.getElementById("zoom-bar-fill");
-                    if(fill) fill.style.width = progress + "%";
+                    if(fill) fill.style.width = Math.min(100, progress) + "%";
 
                     if (currentZoom <= targetZoom) {
                         window.removeEventListener("keydown", handleKeyZoom);
@@ -219,8 +221,8 @@
                 }
 
                 function handleKeyZoom(e) {
-                    if (e.key === "ArrowUp") updateZoom(-0.15);
-                    if (e.key === "ArrowDown") updateZoom(0.15);
+                    if (e.key === "ArrowUp") updateZoom(-0.02);
+                    if (e.key === "ArrowDown") updateZoom(0.02);
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
@@ -229,8 +231,8 @@
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
                     camera.position.z = currentZoom;
-                    camera.lookAt(0, 0, 0);
-                    model.rotation.y += 0.002; // Very slight idle rotation
+                    // Keep light moving with camera
+                    internalLight.position.z = currentZoom;
                     renderer.render(scene, camera);
                 }
                 animate();
