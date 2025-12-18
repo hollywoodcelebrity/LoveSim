@@ -65,7 +65,11 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: #0a0a0a; }
+        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: #0a0a0a; position: relative;}
+        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: white; background: rgba(0,0,0,0.5); padding: 10px; border: 1px solid white; font-size: 0.8em; pointer-events: none; }
+        #zoom-bar-container { width: 100%; height: 4px; background: #333; margin-top: 10px; }
+        #zoom-bar-fill { width: 0%; height: 100%; background: #afeeee; transition: width 0.1s; }
+
         #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; }
         .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
     </style>
@@ -159,7 +163,17 @@
         }
 
         function run3DIntestine() {
-            stage2.innerHTML = '<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div>';
+            stage2.innerHTML = `
+                <div class="text-header-container">
+                    <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
+                    <p style="font-size:0.8em; opacity:0.7;">USE UP/DOWN ARROWS TO NAVIGATE TISSUE LAYERS</p>
+                </div>
+                <div id="three-container">
+                    <div id="zoom-ui">
+                        ZOOM_DEPTH
+                        <div id="zoom-bar-container"><div id="zoom-bar-fill"></div></div>
+                    </div>
+                </div>`;
             const container = document.getElementById("three-container");
             
             const scene = new THREE.Scene();
@@ -182,27 +196,42 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // ROTATE 90 DEGREES TO FACE FRONT
-                model.rotation.y = Math.PI / 2; 
+                // ADJUSTED ROTATION: 90 + 75 degrees
+                model.rotation.y = (Math.PI / 2) + (75 * Math.PI / 180); 
                 
                 scene.add(model);
                 
-                let zoomVal = 12; // Start further away
+                let currentZoom = 12;
+                const startZoom = 12;
+                const targetZoom = 3.2;
+
+                function updateZoom(delta) {
+                    currentZoom = Math.max(targetZoom, Math.min(startZoom, currentZoom + delta));
+                    const progress = ((startZoom - currentZoom) / (startZoom - targetZoom)) * 100;
+                    const fill = document.getElementById("zoom-bar-fill");
+                    if(fill) fill.style.width = progress + "%";
+
+                    if (currentZoom <= targetZoom) {
+                        window.removeEventListener("keydown", handleKeyZoom);
+                        renderer.dispose();
+                        renderMicrobeView();
+                    }
+                }
+
+                function handleKeyZoom(e) {
+                    if (e.key === "ArrowUp") updateZoom(-0.15);
+                    if (e.key === "ArrowDown") updateZoom(0.15);
+                }
+
+                window.addEventListener("keydown", handleKeyZoom);
+
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
-                    
-                    // SLOWER ZOOM RATE
-                    zoomVal -= 0.02; 
-                    camera.position.z = zoomVal;
+                    camera.position.z = currentZoom;
                     camera.lookAt(0, 0, 0);
-
-                    if (zoomVal <= 3.5) {
-                        renderer.dispose();
-                        renderMicrobeView();
-                    } else {
-                        renderer.render(scene, camera);
-                    }
+                    model.rotation.y += 0.002; // Very slight idle rotation
+                    renderer.render(scene, camera);
                 }
                 animate();
             }, undefined, (err) => {
@@ -213,7 +242,7 @@
 
         function renderMicrobeView() {
             stage2.innerHTML = `
-                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3><p style="font-size:0.9em; opacity:0.7;">STABILIZING ENVIRONMENT...</p></div>
+                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div>
                 <div id="microbe-container"></div>
                 <p id="mix-status">MIX_STATUS: 0 / 10</p>`;
             const container = document.getElementById("microbe-container");
@@ -224,14 +253,10 @@
                 m.className = "microbe";
                 m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
                 m.id = "m-" + i;
-                // Randomized static positions
                 m.style.left = (i < 10 ? Math.random()*25 + 5 : Math.random()*25 + 70) + "%";
                 m.style.top = Math.random()*80 + 10 + "%";
                 m.draggable = true;
-                
-                m.ondragstart = (e) => {
-                    e.dataTransfer.setData("text", e.target.id);
-                };
+                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
                 container.appendChild(m);
             }
 
@@ -249,15 +274,12 @@
                 el.style.left = (x - 11) + 'px';
                 el.style.top = (y - 11) + 'px';
 
-                // Check if dropped in the center third of the container
                 if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/6) {
-                    el.style.backgroundColor = "#333"; // Changed to dark when mixed
+                    el.style.backgroundColor = "#333";
                     el.dataset.isMixed = "true";
                     mixedCount++;
                     document.getElementById("mix-status").textContent = "MIX_STATUS: " + mixedCount + " / 10";
-                    if (mixedCount >= 10) {
-                        setTimeout(initStage3, 800);
-                    }
+                    if (mixedCount >= 10) setTimeout(initStage3, 800);
                 }
             };
         }
