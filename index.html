@@ -90,6 +90,20 @@
         }
         .vaso-ui-layer { z-index: 10; color: black; transition: color 0.3s; }
         .vaso-ui-layer.inverted { color: white; }
+
+        /* FINAL SLOW FLASHING TEXT */
+        @keyframes neon-flash-slow {
+            0%, 100% { opacity: 1; filter: drop-shadow(0 0 25px #39ff14); }
+            50% { opacity: 0.2; filter: drop-shadow(0 0 5px #39ff14); }
+        }
+        .final-declaration {
+            color: #39ff14;
+            font-size: 5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-top: 2rem;
+            animation: neon-flash-slow 2s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -116,6 +130,7 @@
         const stage1 = document.getElementById("stage-1");
         const stage2 = document.getElementById("stage-2");
         const stage3 = document.getElementById("stage-3");
+        const conclusion = document.getElementById("conclusion");
         
         let audioCtx;
         function triggerHeartbeat(volume = 0.5) {
@@ -258,15 +273,21 @@
             const input = document.getElementById("oxy-input"); 
             input.focus();
             
-            // Re-focus helper: clicking anywhere focuses the input
             document.onclick = () => { if (input) input.focus(); };
 
             input.oninput = (e) => {
                 if (e.target.value.toUpperCase() === formula) {
                     triggerHeartbeat(1.0);
-                    document.getElementById("conclusion").classList.add("active");
                     stage3.classList.remove("active");
-                    document.getElementById("conclusion").innerHTML = "<h2 style='text-align:center;'>OXYTOCIN_RELEASED<br>NEURAL_BOND_STABILIZED<br>PROCESS_COMPLETE</h2>";
+                    conclusion.classList.add("active");
+                    conclusion.innerHTML = `
+                        <div style="text-align:center;">
+                            <h2>OXYTOCIN_RELEASED</h2>
+                            <h2>NEURAL_BOND_STABILIZED</h2>
+                            <h2>PROCESS_COMPLETE</h2>
+                            <div class="final-declaration">YOU ARE IN LOVE.</div>
+                        </div>
+                    `;
                 }
             };
         }
