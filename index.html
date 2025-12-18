@@ -143,6 +143,13 @@
         let playerClicks = [];
         let lastTargetBeat = performance.now();
 
+        const stage1ClickListener = () => {
+            if (stage1.classList.contains("active")) {
+                triggerHeartbeat(0.4);
+                handleSyncClick();
+            }
+        };
+
         function initStage1() {
             stage1.innerHTML = `
                 <div class="text-header-container">
@@ -157,15 +164,6 @@
                 <h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>`;
             
             setInterval(() => { if (stage1.classList.contains("active")) lastTargetBeat = performance.now(); }, targetInterval);
-            
-            const stage1ClickListener = () => {
-                if (stage1.classList.contains("active")) {
-                    triggerHeartbeat(0.4);
-                    handleSyncClick();
-                } else {
-                    document.removeEventListener("click", stage1ClickListener);
-                }
-            };
             document.addEventListener("click", stage1ClickListener);
         }
 
@@ -176,7 +174,10 @@
             if (diff <= 500) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; }
             else { playerClicks = []; document.getElementById("judgment-text").textContent = "STATUS: MISSED"; }
             document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
-            if (playerClicks.length >= 5) { setTimeout(initStage2, 1000); }
+            if (playerClicks.length >= 5) { 
+                document.removeEventListener("click", stage1ClickListener);
+                setTimeout(initStage2, 1000); 
+            }
         }
 
         function initStage2() {
@@ -253,8 +254,13 @@
 
         function goToOxytocin() {
             const formula = "C43H66N12O12S2";
-            stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: ${formula}</p></div>`;
-            const input = document.getElementById("oxy-input"); input.focus();
+            stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div id="final-ui" class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px; z-index:100; position:relative;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: ${formula}</p></div>`;
+            const input = document.getElementById("oxy-input"); 
+            input.focus();
+            
+            // Re-focus helper: clicking anywhere focuses the input
+            document.onclick = () => { if (input) input.focus(); };
+
             input.oninput = (e) => {
                 if (e.target.value.toUpperCase() === formula) {
                     triggerHeartbeat(1.0);
