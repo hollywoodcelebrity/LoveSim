@@ -23,7 +23,7 @@
 
         .text-header-container {
             width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
-            z-index: 10;
+            z-index: 100; pointer-events: none;
         }
 
         #profiles-container {
@@ -44,7 +44,6 @@
             100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
         }
 
-        /* Target Side: Neon Green */
         .profile-wrapper.target::before, .profile-wrapper.target::after {
             content: ''; position: absolute; top: 50%; left: 50%;
             width: 100%; height: 100%; border-radius: 50%;
@@ -60,7 +59,6 @@
             animation: approach-circle 4s linear infinite; z-index: -1;
         }
 
-        /* Player Side: Pastel Turquoise */
         .player-ripple {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
             border-radius: 50%; border: 3px solid #afeeee;
@@ -69,11 +67,12 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { 
+        #three-container, #microbe-full-container { 
             position: absolute; top: 0; left: 0;
             width: 100vw; height: 100vh; 
             background: white; z-index: 1;
         }
+
         #zoom-ui { 
             position: absolute; bottom: 40px; right: 40px; 
             color: black; background: rgba(255,255,255,0.9); 
@@ -83,8 +82,37 @@
         #zoom-bar-container { width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
         #zoom-bar-fill { width: 0%; height: 100%; background: #afeeee; transition: width 0.1s; }
 
-        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; z-index: 5; }
-        .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
+        /* MICROBE STYLING */
+        @keyframes microbe-float {
+            0%, 100% { transform: translate(0, 0); }
+            25% { transform: translate(10px, -15px); }
+            50% { transform: translate(-5px, 10px); }
+            75% { transform: translate(15px, 5px); }
+        }
+
+        .microbe { 
+            width: 45px; height: 45px; border-radius: 50%; 
+            position: absolute; cursor: grab; border: 2px solid black; 
+            transition: background-color 0.3s, transform 0.1s; 
+            z-index: 10;
+            animation: microbe-float 6s ease-in-out infinite;
+        }
+        .microbe:active { cursor: grabbing; animation: none; }
+
+        #mix-status-floating {
+            position: absolute; bottom: 40px; left: 40px;
+            background: rgba(255,255,255,0.9); border: 1px solid black;
+            padding: 15px; font-weight: bold; z-index: 100;
+        }
+
+        #center-lane {
+            position: absolute; left: 50%; top: 0;
+            width: 20vw; height: 100vh; transform: translateX(-50%);
+            border-left: 1px dashed rgba(0,0,0,0.1);
+            border-right: 1px dashed rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.02);
+            pointer-events: none; z-index: 0;
+        }
     </style>
 </head>
 <body>
@@ -120,7 +148,7 @@
                 <div class="text-header-container">
                     <h2>STAGE 1: NEURAL_SYNC</h2>
                     <div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div>
-                    <p>CLICK WHEN OUTER_RING HITS CENTER</p>
+                    <p>CLICK WHEN NEON RINGS HIT CENTER</p>
                 </div>
                 <div id="profiles-container">
                     <div class="profile-wrapper" id="player-profile">
@@ -171,7 +199,7 @@
                 <div class="text-header-container">
                     <h2>STAGE 2: MICROBIAL_EXCHANGE</h2>
                 </div>
-                <div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold; background: white; z-index: 10;">INIT_ZOOM</div>`;
+                <div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold; background: white; z-index: 100;">INIT_ZOOM</div>`;
             document.getElementById("zoom-bullseye").onclick = run3DIntestine;
         }
 
@@ -179,7 +207,7 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: SLOW TRAVERSAL // DOWN ARROW: RETRACT</p>
+                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: TRAVERSE // DOWN ARROW: RETRACT</p>
                 </div>
                 <div id="three-container"></div>
                 <div id="zoom-ui">
@@ -207,7 +235,6 @@
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
-                
                 model.rotation.y = (140 * Math.PI / 180); 
                 model.position.x -= 0.5;
                 scene.add(model);
@@ -219,7 +246,6 @@
                 function updateZoom(delta) {
                     currentZoom += delta;
                     if (currentZoom < startZ) currentZoom = startZ;
-                    
                     const progress = Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100;
                     const fill = document.getElementById("zoom-bar-fill");
                     if(fill) fill.style.width = Math.min(100, progress) + "%";
@@ -242,11 +268,9 @@
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
-                    
                     camera.position.z = currentZoom;
                     camera.position.x = Math.sin(currentZoom * 0.1) * 0.2; 
                     camera.lookAt(0, 0, currentZoom + 1);
-                    
                     pointLight.position.copy(camera.position);
                     renderer.render(scene, camera);
                 }
@@ -259,22 +283,37 @@
 
         function renderMicrobeView() {
             stage2.innerHTML = `
-                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div>
-                <div id="microbe-container"></div>
-                <p id="mix-status">MIX_STATUS: 0 / 10</p>`;
-            const container = document.getElementById("microbe-container");
+                <div class="text-header-container">
+                    <h3>MIXING_MICROBIOTA</h3>
+                    <p style="opacity:0.6;">DRAG ELEMENTS TO THE CENTRAL CHANNEL</p>
+                </div>
+                <div id="microbe-full-container">
+                    <div id="center-lane"></div>
+                </div>
+                <div id="mix-status-floating">MIX_STATUS: 0 / 10</div>`;
+            
+            const container = document.getElementById("microbe-full-container");
             let mixedCount = 0;
 
             for (let i = 0; i < 20; i++) {
                 const m = document.createElement("div");
                 m.className = "microbe";
-                // Swapped Microbe colors to match new theme
                 m.style.backgroundColor = (i < 10 ? "#afeeee" : "#39ff14");
                 m.id = "m-" + i;
-                m.style.left = (i < 10 ? Math.random()*25 + 5 : Math.random()*25 + 70) + "%";
-                m.style.top = Math.random()*80 + 10 + "%";
+                
+                // Spread across the full screen width, avoiding center
+                const side = i < 10 ? Math.random()*30 : Math.random()*30 + 70;
+                m.style.left = side + "vw";
+                m.style.top = Math.random()*80 + 10 + "vh";
+                
+                // Staggered animation delays for natural feel
+                m.style.animationDelay = (Math.random() * 5) + "s";
+                
                 m.draggable = true;
-                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+                m.ondragstart = (e) => {
+                    e.dataTransfer.setData("text", e.target.id);
+                    e.target.style.animation = 'none'; // Stop floating while dragging
+                };
                 container.appendChild(m);
             }
 
@@ -285,18 +324,19 @@
                 const el = document.getElementById(id);
                 if (!el) return;
                 
-                const rect = container.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
+                const x = e.clientX;
+                const y = e.clientY;
 
-                el.style.left = (x - 11) + 'px';
-                el.style.top = (y - 11) + 'px';
+                el.style.left = (x - 22) + 'px';
+                el.style.top = (y - 22) + 'px';
 
-                if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/6) {
+                // Check if dropped in center 20% of screen
+                const screenCenter = window.innerWidth / 2;
+                if (!el.dataset.isMixed && Math.abs(x - screenCenter) < window.innerWidth * 0.1) {
                     el.style.backgroundColor = "#333";
                     el.dataset.isMixed = "true";
                     mixedCount++;
-                    document.getElementById("mix-status").textContent = "MIX_STATUS: " + mixedCount + " / 10";
+                    document.getElementById("mix-status-floating").textContent = "MIX_STATUS: " + mixedCount + " / 10";
                     if (mixedCount >= 10) setTimeout(initStage3, 800);
                 }
             };
@@ -307,7 +347,7 @@
             stage3.classList.add("active");
             stage3.innerHTML = `
                 <div class="text-header-container"><h2>STAGE 3: VASODILATION</h2></div>
-                <div style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;">
+                <div style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative; z-index:100;">
                     <div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s; pointer-events:none;"></div>
                 </div>
                 <p>PRESS SPACE REPEATEDLY</p>
@@ -332,7 +372,7 @@
             const formula = "C43H66N12O12S2";
             stage3.innerHTML = `
                 <div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p>REQ: ${formula}</p></div>
-                <input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:10px; border:2px solid black; width:320px; font-family: 'Source Code Pro', monospace; font-size: 1.1em; outline: none;">
+                <input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:10px; border:2px solid black; width:320px; font-family: 'Source Code Pro', monospace; font-size: 1.1em; outline: none; z-index:100; position:relative;">
                 <p style="margin-top:15px; font-size:0.8em; opacity:0.6;">MATCH ENCRYPTED STRING EXACTLY</p>`;
             const input = document.getElementById("oxy-input");
             input.focus();
