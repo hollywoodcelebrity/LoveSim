@@ -119,39 +119,63 @@
                 stage2.innerHTML = '<div class="text-header-container"><h2>STAGE 2: MICROBIAL_EXCHANGE</h2></div><div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>';
                 document.getElementById("zoom-bullseye").onclick = run3DIntestine;
             }
-
-            function run3DIntestine() {
+function run3DIntestine() {
                 stage2.innerHTML = '<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div>';
                 const container = document.getElementById("three-container");
                 
                 const scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x000000); // Dark space for the map
+
                 const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
                 const renderer = new THREE.WebGLRenderer({ antialias: true });
                 renderer.setSize(container.clientWidth, container.clientHeight);
+                renderer.outputColorSpace = THREE.SRGBColorSpace; // Ensures colors look like Blender
                 container.appendChild(renderer.domElement);
 
-                const light = new THREE.DirectionalLight(0xffffff, 1);
-                light.position.set(5, 5, 5).normalize();
-                scene.add(light);
-                scene.add(new THREE.AmbientLight(0x404040));
+                // --- STUDIO LIGHTING SETUP ---
+                // 1. Ambient Light (Soft base lighting so it's never pitch black)
+                const ambient = new THREE.AmbientLight(0xffffff, 0.5); 
+                scene.add(ambient);
+
+                // 2. Point Light (Placed in front of the object to create depth)
+                const pointLight = new THREE.PointLight(0xffffff, 50);
+                pointLight.position.set(2, 3, 4);
+                scene.add(pointLight);
+
+                // 3. Directional Light (Simulates sun/overhead studio light)
+                const sunLight = new THREE.DirectionalLight(0xffffff, 2);
+                sunLight.position.set(-2, 2, 2);
+                scene.add(sunLight);
 
                 const loader = new THREE.GLTFLoader();
-                // REPLACE 'intestine.glb' WITH YOUR FILE NAME
                 loader.load('SMALL_INTESTINE.glb', (gltf) => {
-                    scene.add(gltf.scene);
-                    gltf.scene.position.set(0, 0, 0);
+                    const model = gltf.scene;
+                    
+                    // Center the model automatically
+                    const box = new THREE.Box3().setFromObject(model);
+                    const center = box.getCenter(new THREE.Vector3());
+                    model.position.sub(center);
+                    
+                    scene.add(model);
                     animate();
                 }, undefined, (error) => {
-                    console.error("3D Model load failed. Ensure SMALL_INTESTINE.glb is in the folder.");
-                    // Fallback to manual stage if model fails
+                    console.error("Model failed. Using fallback.");
                     setTimeout(renderMicrobeView, 2000);
                 });
 
-                camera.position.z = 5;
+                camera.position.z = 8; // Start further back
+
                 function animate() {
                     requestAnimationFrame(animate);
-                    if (camera.position.z > 1.5) camera.position.z -= 0.02; // Camera map "Zoom"
-                    else { renderer.dispose(); renderMicrobeView(); return; }
+                    // Slow zoom-in effect
+                    if (camera.position.z > 3) {
+                        camera.position.z -= 0.05;
+                    } else {
+                        // After zoom completes, move to the next stage
+                        renderer.dispose();
+                        renderMicrobeView();
+                        return;
+                    }
                     renderer.render(scene, camera);
                 }
             }
