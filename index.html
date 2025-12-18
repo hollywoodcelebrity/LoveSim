@@ -187,7 +187,6 @@
             const container = document.getElementById("three-container");
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0xffffff);
-            // Wider FOV for internal feel
             const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.01, 3000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(window.innerWidth, window.innerHeight);
@@ -195,7 +194,7 @@
 
             const ambient = new THREE.AmbientLight(0xffffff, 3.5); 
             scene.add(ambient);
-            const pointLight = new THREE.PointLight(0xffffff, 25);
+            const pointLight = new THREE.PointLight(0xffffff, 30);
             scene.add(pointLight);
 
             const loader = new GLTFLoader();
@@ -206,14 +205,13 @@
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Alignment based on your request
                 model.rotation.y = (140 * Math.PI / 180); 
                 model.position.x -= 0.5;
                 scene.add(model);
 
-                // ULTRA TIGHT START: Beginning significantly closer
+                // Path tracking variables
                 let startZ = -size.z * 0.15; 
-                let endZ = size.z * 1.1; // Ends much further
+                let endZ = size.z * 1.1; 
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
@@ -242,9 +240,10 @@
                     requestAnimationFrame(animate);
                     
                     camera.position.z = currentZoom;
-                    // Follow curve
-                    camera.position.x = Math.sin(currentZoom * 0.3) * 0.7;
-                    camera.lookAt(camera.position.x * 1.5, 0, currentZoom + 1.5);
+                    // Adjusted X to maintain centerline alignment based on rotation
+                    camera.position.x = Math.sin(currentZoom * 0.1) * 0.2; 
+                    
+                    camera.lookAt(0, 0, currentZoom + 1);
                     
                     pointLight.position.copy(camera.position);
                     renderer.render(scene, camera);
