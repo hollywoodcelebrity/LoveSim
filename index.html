@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bio-Love Simulator</title>
     <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
     <style>
         body {
             width: 100vw; height: 100vh;
@@ -45,6 +43,7 @@
             100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
         }
 
+        /* Target Side: Pastel Turquoise */
         .profile-wrapper.target::before, .profile-wrapper.target::after {
             content: ''; position: absolute; top: 50%; left: 50%;
             width: 100%; height: 100%; border-radius: 50%;
@@ -52,11 +51,14 @@
             animation: radial-pulse 4s linear infinite; z-index: -1;
         }
         .profile-wrapper.target::after { animation-delay: 2s; }
+
         .approach-ring {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
             border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1);
             animation: approach-circle 4s linear infinite; z-index: -1;
         }
+
+        /* Player Side: Pastel Pink */
         .player-ripple {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
             border-radius: 50%; border: 3px solid #fbcce7;
@@ -65,7 +67,7 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { width: 100%; height: 400px; margin-top: 20px; border: 2px solid black; background: #000; }
+        #three-container { width: 100%; height: 400px; margin-top: 20px; border: 2px solid black; background: #111; }
         #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
         .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
     </style>
@@ -77,8 +79,20 @@
         <div id="stage-3" class="game-stage"></div>
         <div id="conclusion" class="game-stage"></div>
     </div>
-    
-    <script>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
         const stage1 = document.getElementById("stage-1");
         const stage2 = document.getElementById("stage-2");
         const stage3 = document.getElementById("stage-3");
@@ -109,11 +123,9 @@
             document.addEventListener("click", handleSyncClick);
         }
 
-        function handleSyncClick(e) {
+        function handleSyncClick() {
             if (!stage1.classList.contains("active")) return;
-            const now = performance.now();
-            const timeInLoop = (now - lastTargetBeat) % targetInterval;
-            const diff = Math.min(timeInLoop, targetInterval - timeInLoop);
+            const diff = Math.min((performance.now() - lastTargetBeat) % targetInterval, targetInterval - ((performance.now() - lastTargetBeat) % targetInterval));
             
             const ripple = document.getElementById("player-ripple-1");
             if(ripple) { 
@@ -154,20 +166,18 @@
             
             const scene = new THREE.Scene();
             scene.background = new THREE.Color(0x111111);
-
             const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            // Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 1.2); 
+            const ambient = new THREE.AmbientLight(0xffffff, 1.5); 
             scene.add(ambient);
-            const point = new THREE.PointLight(0xffffff, 2);
-            point.position.set(5, 5, 5);
-            scene.add(point);
+            const light = new THREE.PointLight(0xffffff, 10);
+            light.position.set(5, 5, 5);
+            scene.add(light);
 
-            const loader = new THREE.GLTFLoader();
+            const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
                 const model = gltf.scene;
                 const box = new THREE.Box3().setFromObject(model);
@@ -175,14 +185,14 @@
                 model.position.sub(center);
                 scene.add(model);
                 
-                let zoomVal = 8;
+                let zoomVal = 10;
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
-                    zoomVal -= 0.04;
+                    zoomVal -= 0.05;
                     camera.position.z = zoomVal;
                     model.rotation.y += 0.01;
-                    if (zoomVal <= 2.5) {
+                    if (zoomVal <= 3) {
                         renderer.dispose();
                         renderMicrobeView();
                     } else {
@@ -191,20 +201,19 @@
                 }
                 animate();
             }, undefined, (err) => {
-                console.error("3D Load Failed", err);
+                console.error("3D Model Error:", err);
                 setTimeout(renderMicrobeView, 2000);
             });
         }
 
         function renderMicrobeView() {
             stage2.innerHTML = `
-                <div class="text-header-container">
-                    <h3>MIXING_MICROBIOTA</h3>
-                </div>
+                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div>
                 <div id="microbe-container"></div>
                 <p id="mix-status">MIX_STATUS: 0 / 10</p>`;
             const container = document.getElementById("microbe-container");
             let mixedCount = 0;
+
             for (let i = 0; i < 20; i++) {
                 const m = document.createElement("div");
                 m.className = "microbe";
@@ -216,6 +225,7 @@
                 m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
                 container.appendChild(m);
             }
+
             container.ondragover = (e) => e.preventDefault();
             container.ondrop = (e) => {
                 e.preventDefault();
@@ -238,7 +248,7 @@
             stage3.classList.add("active");
             stage3.innerHTML = `
                 <div class="text-header-container"><h2>STAGE 3: VASODILATION</h2></div>
-                <div id="heat-profiles" style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;">
+                <div style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;">
                     <div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div>
                 </div>
                 <p>PRESS SPACE REPEATEDLY</p>
@@ -262,10 +272,7 @@
         function goToOxytocin() {
             const formula = "C43H66N12O12S2";
             stage3.innerHTML = `
-                <div class="text-header-container">
-                    <h3>SYNTHESIS: OXYTOCIN</h3>
-                    <p>REQ: ${formula}</p>
-                </div>
+                <div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p>REQ: ${formula}</p></div>
                 <input type="text" id="oxy-input" style="padding:10px; border:2px solid black; width:300px; font-family: 'Source Code Pro', monospace;">
                 <p>MATCH TEXT EXACTLY</p>`;
             const input = document.getElementById("oxy-input");
