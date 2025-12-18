@@ -166,7 +166,7 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">HOLD UP ARROW TO DIVE THROUGH THE MODEL</p>
+                    <p style="font-size:0.8em; opacity:0.7;">HOLD UP ARROW TO TRAVERSE CURVED TISSUE</p>
                 </div>
                 <div id="three-container">
                     <div id="zoom-ui">
@@ -183,28 +183,28 @@
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 2.5); 
+            const ambient = new THREE.AmbientLight(0xffffff, 2.8); 
             scene.add(ambient);
-            const light = new THREE.PointLight(0xffffff, 10);
+            const light = new THREE.PointLight(0xffffff, 15);
             scene.add(light);
 
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
                 const model = gltf.scene;
                 
-                // Auto-Center and Auto-Scale
                 const box = new THREE.Box3().setFromObject(model);
                 const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Apply your 165 degree rotation
-                model.rotation.y = (165 * Math.PI / 180); 
+                // Rotated Left by adjusting from 165 to 140 degrees & Nudged X left
+                model.rotation.y = (140 * Math.PI / 180); 
+                model.position.x -= 0.5;
                 scene.add(model);
 
-                // Dynamically set zoom bounds based on the model size
-                let startZ = size.z * 0.8;
-                let endZ = -size.z * 0.8;
+                // START AT THE OTHER OPENING (Positive Z instead of Negative)
+                let startZ = -size.z * 0.8;
+                let endZ = size.z * 0.8;
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
@@ -213,7 +213,7 @@
                     const fill = document.getElementById("zoom-bar-fill");
                     if(fill) fill.style.width = Math.min(100, progress) + "%";
 
-                    if (currentZoom <= endZ) {
+                    if (currentZoom >= endZ) {
                         window.removeEventListener("keydown", handleKeyZoom);
                         renderer.dispose();
                         renderMicrobeView();
@@ -221,8 +221,9 @@
                 }
 
                 function handleKeyZoom(e) {
-                    if (e.key === "ArrowUp") updateZoom(- (size.z / 100)); // Moves forward relative to size
-                    if (e.key === "ArrowDown") updateZoom(size.z / 100);
+                    // Reversed keys to match the new direction
+                    if (e.key === "ArrowUp") updateZoom(size.z / 80); 
+                    if (e.key === "ArrowDown") updateZoom(-(size.z / 80));
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
@@ -231,8 +232,14 @@
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
+                    
                     camera.position.z = currentZoom;
-                    light.position.copy(camera.position); // Light follows camera
+                    // ACCOUNT FOR CURVE: Shift camera X based on Z position to follow curve
+                    // This assumes a gentle arc to the right as it goes forward
+                    camera.position.x = Math.sin(currentZoom * 0.5) * 0.8;
+                    
+                    camera.lookAt(camera.position.x * 1.5, 0, currentZoom + 2);
+                    light.position.copy(camera.position);
                     renderer.render(scene, camera);
                 }
                 animate();
