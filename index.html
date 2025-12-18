@@ -115,9 +115,48 @@
         const stage3 = document.getElementById("stage-3");
         const conclusion = document.getElementById("conclusion");
         
+        // --- AUDIO SYSTEM ---
         let audioCtx;
+        let ambientRunning = false;
+
+        function initAudio() {
+            if (ambientRunning) return;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            startAmbientDrone();
+            ambientRunning = true;
+        }
+
+        function startAmbientDrone() {
+            const masterGain = audioCtx.createGain();
+            masterGain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            masterGain.connect(audioCtx.destination);
+
+            // Bass Drone
+            const osc = audioCtx.createOscillator();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(40, audioCtx.currentTime);
+            osc.connect(masterGain);
+            osc.start();
+
+            // Rhythmic Sparkles
+            setInterval(() => {
+                if (!ambientRunning) return;
+                const sparkle = audioCtx.createOscillator();
+                const sGain = audioCtx.createGain();
+                sparkle.type = 'sine';
+                sparkle.frequency.setValueAtTime(440 + Math.random() * 880, audioCtx.currentTime);
+                sGain.gain.setValueAtTime(0, audioCtx.currentTime);
+                sGain.gain.linearRampToValueAtTime(0.05, audioCtx.currentTime + 2);
+                sGain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 4);
+                sparkle.connect(sGain);
+                sGain.connect(masterGain);
+                sparkle.start();
+                sparkle.stop(audioCtx.currentTime + 4);
+            }, 3000);
+        }
+
         function triggerHeartbeat(volume = 0.5) {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (!audioCtx) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const now = audioCtx.currentTime;
             const osc1 = audioCtx.createOscillator();
@@ -134,6 +173,7 @@
         let lastTargetBeat = performance.now();
 
         const stage1ClickListener = () => {
+            initAudio();
             if (stage1.classList.contains("active")) {
                 triggerHeartbeat(0.4);
                 handleSyncClick();
@@ -225,7 +265,6 @@
             stage2.innerHTML = `
                 <div class="text-header-container" style="position:absolute; top:40px; left:40px; z-index:100;">
                     <h3>MIXING_MICROBIOTA</h3>
-                    <p style="opacity:0.6;">DRAG ELEMENTS TO THE CENTRAL CHANNEL</p>
                 </div>
                 <div id="microbe-full-container" style="position:absolute; inset:0;">
                     <div style="position: absolute; left: 50%; top: 0; width: 20vw; height: 100vh; transform: translateX(-50%); border-left: 1px dashed rgba(0,0,0,0.1); border-right: 1px dashed rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); pointer-events: none;"></div>
@@ -264,7 +303,7 @@
 
         function initStage3() {
             stage2.classList.remove("active"); stage3.classList.add("active");
-            stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2><p id="vaso-sub">RAPIDLY PULSE SPACEBAR</p></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
+            stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
             let presses = 0;
             const vasoSpaceHandler = (e) => {
                 if (e.code === "Space" && stage3.classList.contains("active")) {
