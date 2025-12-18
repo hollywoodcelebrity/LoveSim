@@ -47,15 +47,16 @@
             }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
-            /* RADAR PULSE ANIMATIONS */
+            /* TARGET RINGS ANIMATION */
             @keyframes radial-pulse {
                 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
                 100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
             }
 
+            /* PLAYER RIPPLE ANIMATION (MATCHED TO 2S PACE) */
             @keyframes player-ripple {
-                0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; border-width: 4px; }
-                100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; border-width: 1px; }
+                0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; border-width: 3px; }
+                100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; border-width: 1px; }
             }
 
             @keyframes approach-circle {
@@ -79,14 +80,14 @@
                 animation: approach-circle 2s linear infinite; z-index: -1;
             }
 
-            /* PLAYER RIPPLE ELEMENT */
+            /* PLAYER RIPPLE FX */
             #player-ripple-fx {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 2px solid #00ffc8;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
-            .ripple-active { animation: player-ripple 0.4s ease-out; }
+            .ripple-active { animation: player-ripple 2s ease-out forwards; }
 
             #judgment-text {
                 font-size: 2.5em; font-weight: bold; height: 1.2em; margin-bottom: 10px;
@@ -95,7 +96,7 @@
             #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; color: #555; }
             #score-display { color: #333; }
 
-            /* STAGE 2 & 3 ADJUSTMENTS */
+            /* STAGE 2 & 3 STYLES */
             #microbe-container {
                 width: 80%; max-width: 600px; aspect-ratio: 16 / 9; 
                 border: 2px solid #ccc; position: relative; background-color: #f9f9f9; 
@@ -107,7 +108,6 @@
                 width: 400px; height: 150px; max-width: 90%; position: relative;
                 background-color: #eee; margin: 20px 0; border: 1px solid #ccc;
             }
-            input[type="text"] { border: 2px solid #333; border-radius: 5px; }
         `;
 
         // --- INJECTING JAVASCRIPT CONTENT ---
@@ -157,7 +157,7 @@
                     const scoreDisplay = document.getElementById('score-display');
                     const ripple = document.getElementById('player-ripple-fx');
 
-                    // Trigger Player Ripple
+                    // Trigger Player Ripple (Resetting animation)
                     ripple.classList.remove('ripple-active');
                     void ripple.offsetWidth; 
                     ripple.classList.add('ripple-active');
