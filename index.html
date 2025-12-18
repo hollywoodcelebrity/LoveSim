@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bio-Love Simulator</title>
     <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
     <style id="game-style"></style>
 </head>
 <body>
@@ -38,10 +40,7 @@
             .game-stage.active { display: flex; }
 
             .text-header-container {
-                width: 100%;
-                text-align: left;
-                margin-bottom: 20px;
-                max-width: 90vw;
+                width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
             }
 
             #profiles-container {
@@ -49,23 +48,19 @@
                 width: 90vw; height: 60vh; align-items: flex-end;
                 margin-top: auto;
             }
-            .profile-wrapper {
-                position: relative; width: 35vw; height: 55vh; 
-            }
+            .profile-wrapper { position: relative; width: 35vw; height: 55vh; }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
             @keyframes radial-pulse {
                 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
                 100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
             }
-
             @keyframes approach-circle {
                 0% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
                 20% { opacity: 0.4; }
                 100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
             }
 
-            /* TARGET SIDE RINGS (PASTEL TURQUOISE) */
             .profile-wrapper.target::before, .profile-wrapper.target::after {
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
@@ -73,29 +68,20 @@
                 animation: radial-pulse 4s linear infinite; z-index: -1;
             }
             .profile-wrapper.target::after { animation-delay: 2s; }
-
             .approach-ring {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1);
                 animation: approach-circle 4s linear infinite; z-index: -1;
             }
-
-            /* PLAYER SIDE RINGS (PASTEL PINK) */
             .player-ripple {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
                 border-radius: 50%; border: 3px solid #fbcce7;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
-            
             .ripple-active { animation: radial-pulse 4s linear forwards; }
-            #player-ripple-2 { animation-delay: 0.3s; }
 
-            #judgment-text { font-size: 2em; font-weight: bold; height: 1.2em; margin: 10px 0; }
-            #sync-message { font-size: 1em; opacity: 0.7; color: #333; margin: 0; }
-            h2 { margin: 0; font-weight: 700; font-size: 1.5em; text-align: left; }
-            #score-display { font-weight: 700; margin-top: 20px; text-align: center; width: 100%; }
-
+            #three-container { width: 100%; height: 300px; margin-top: 20px; border: 2px solid black; background: #000; }
             #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
             .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
         `;
@@ -104,75 +90,81 @@
             const stage1 = document.getElementById("stage-1");
             const stage2 = document.getElementById("stage-2");
             const stage3 = document.getElementById("stage-3");
-            const conclusion = document.getElementById("conclusion");
-
             const targetInterval = 4000; 
             let playerClicks = [];
             let lastTargetBeat = performance.now();
 
             function initStage1() {
-                stage1.innerHTML = '<div class="text-header-container"><h2>STAGE 1: NEURAL_SYNC</h2><div id="judgment-text">STATUS: AWAITING_INPUT</div><p id="sync-message">CLICK TO EMIT_RIPPLE WHEN OUTER_RING HITS CENTER</p></div><div id="profiles-container"><div class="profile-wrapper" id="player-profile"><img src="player_profile.png" alt="Player" class="profile-image"><div id="player-ripple-1" class="player-ripple"></div><div id="player-ripple-2" class="player-ripple"></div></div><div class="profile-wrapper target" id="target-profile"><img src="target_profile.png" alt="Target" class="profile-image"><div class="approach-ring"></div></div></div><h3 id="score-display">MATCH_COUNT: 0 / 5</h3>';
-                
+                stage1.innerHTML = '<div class="text-header-container"><h2>STAGE 1: NEURAL_SYNC</h2><div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div><p style="font-size:1em; opacity:0.7;">CLICK WHEN OUTER_RING HITS CENTER</p></div><div id="profiles-container"><div class="profile-wrapper" id="player-profile"><img src="player_profile.png" alt="P1" class="profile-image"><div id="player-ripple-1" class="player-ripple"></div></div><div class="profile-wrapper target" id="target-profile"><img src="target_profile.png" alt="T1" class="profile-image"><div class="approach-ring"></div></div></div><h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>';
                 setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
                 document.addEventListener("click", handleSyncClick);
             }
 
             function handleSyncClick() {
                 if (!stage1.classList.contains("active")) return;
-                const clickTime = performance.now();
-                const timeSinceLastBeat = (clickTime - lastTargetBeat) % targetInterval;
-                const diff = Math.min(timeSinceLastBeat, targetInterval - timeSinceLastBeat); 
-                
-                const judgment = document.getElementById("judgment-text");
-                const scoreDisplay = document.getElementById("score-display");
-                
-                const r1 = document.getElementById("player-ripple-1");
-                const r2 = document.getElementById("player-ripple-2");
-                
-                [r1, r2].forEach(r => {
-                    if(r) {
-                        r.classList.remove("ripple-active");
-                        void r.offsetWidth; 
-                        r.classList.add("ripple-active");
-                    }
-                });
+                const diff = Math.min((performance.now() - lastTargetBeat) % targetInterval, targetInterval - ((performance.now() - lastTargetBeat) % targetInterval));
+                const ripple = document.getElementById("player-ripple-1");
+                if(ripple) { ripple.classList.remove("ripple-active"); void ripple.offsetWidth; ripple.classList.add("ripple-active"); }
 
-                if (diff <= 400) {
-                    playerClicks.push("synced");
-                    judgment.textContent = "STATUS: PERFECT";
-                } else if (diff <= 750) {
-                    playerClicks.push("synced");
-                    judgment.textContent = "STATUS: GOOD";
-                } else {
-                    playerClicks = []; 
-                    judgment.textContent = timeSinceLastBeat > 2000 ? "STATUS: EARLY" : "STATUS: LATE";
-                }
+                if (diff <= 400) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; }
+                else { playerClicks = []; document.getElementById("judgment-text").textContent = "STATUS: MISSED"; }
 
-                if(scoreDisplay) scoreDisplay.textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
-
-                if (playerClicks.length >= 5) {
-                    document.removeEventListener("click", handleSyncClick);
-                    judgment.textContent = "SYNC_COMPLETE";
-                    setTimeout(initStage2, 1500);
-                }
+                document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
+                if (playerClicks.length >= 5) { document.removeEventListener("click", handleSyncClick); setTimeout(initStage2, 1000); }
             }
 
             function initStage2() {
                 stage1.classList.remove("active");
                 stage2.classList.add("active");
-                stage2.innerHTML = '<div class="text-header-container"><h2>STAGE 2: MICROBIAL_EXCHANGE</h2><p id="sync-message">PROFILES_APPROACHING...</p></div><div id="zoom-bullseye" style="padding:20px; border:2px solid black; background:white; color:black; cursor:pointer; font-weight:bold; margin: auto;">INIT_ZOOM</div>';
-                document.getElementById("zoom-bullseye").onclick = renderMicrobeView;
+                stage2.innerHTML = '<div class="text-header-container"><h2>STAGE 2: MICROBIAL_EXCHANGE</h2></div><div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>';
+                document.getElementById("zoom-bullseye").onclick = run3DIntestine;
+            }
+
+            function run3DIntestine() {
+                stage2.innerHTML = '<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div>';
+                const container = document.getElementById("three-container");
+                
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+                const renderer = new THREE.WebGLRenderer({ antialias: true });
+                renderer.setSize(container.clientWidth, container.clientHeight);
+                container.appendChild(renderer.domElement);
+
+                const light = new THREE.DirectionalLight(0xffffff, 1);
+                light.position.set(5, 5, 5).normalize();
+                scene.add(light);
+                scene.add(new THREE.AmbientLight(0x404040));
+
+                const loader = new THREE.GLTFLoader();
+                // REPLACE 'intestine.glb' WITH YOUR FILE NAME
+                loader.load('intestine.glb', (gltf) => {
+                    scene.add(gltf.scene);
+                    gltf.scene.position.set(0, 0, 0);
+                    animate();
+                }, undefined, (error) => {
+                    console.error("3D Model load failed. Ensure intestine.glb is in the folder.");
+                    // Fallback to manual stage if model fails
+                    setTimeout(renderMicrobeView, 2000);
+                });
+
+                camera.position.z = 5;
+                function animate() {
+                    requestAnimationFrame(animate);
+                    if (camera.position.z > 1.5) camera.position.z -= 0.02; // Camera map "Zoom"
+                    else { renderer.dispose(); renderMicrobeView(); return; }
+                    renderer.render(scene, camera);
+                }
             }
 
             function renderMicrobeView() {
-                stage2.innerHTML = '<div class="text-header-container"><h3>MIXING_MICROBIOTA</h3><p id="sync-message">DRAG ELEMENTS TO CENTER LINE</p></div><div id="microbe-container"></div><p id="mix-status" style="margin-top: 20px;">MIX_STATUS: 0 / 10</p>';
+                stage2.innerHTML = '<div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div><div id="microbe-container"></div><p id="mix-status">MIX_STATUS: 0 / 10</p>';
                 const container = document.getElementById("microbe-container");
                 let mixedCount = 0;
                 for (let i = 0; i < 20; i++) {
                     const m = document.createElement("div");
                     m.className = "microbe";
                     m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
-                    m.id = "microbe-" + i;
+                    m.id = "m-" + i;
                     m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + "%";
                     m.style.top = Math.random()*85 + "%";
                     m.draggable = true;
@@ -182,12 +174,12 @@
                 container.ondragover = (e) => e.preventDefault();
                 container.ondrop = (e) => {
                     e.preventDefault();
-                    const id = e.dataTransfer.getData("text");
-                    const el = document.getElementById(id);
+                    const el = document.getElementById(e.dataTransfer.getData("text"));
                     const rect = container.getBoundingClientRect();
-                    el.style.left = (e.clientX - rect.left - 10) + "px";
+                    const x = e.clientX - rect.left;
+                    el.style.left = (x - 10) + "px";
                     el.style.top = (e.clientY - rect.top - 10) + "px";
-                    if (!el.dataset.isMixed && Math.abs((e.clientX - rect.left) - rect.width/2) < rect.width/5) {
+                    if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/5) {
                         el.style.backgroundColor = "black";
                         el.dataset.isMixed = "true";
                         mixedCount++;
@@ -210,27 +202,16 @@
                         document.getElementById("heat-overlay").style.backgroundColor = "rgba(0, 0, 0, " + (pct/100) + ")";
                         if (presses >= 30) {
                             document.removeEventListener("keydown", spaceHandler);
-                            goToOxytocin();
+                            const formula = "C43H66N12O12S2";
+                            stage3.innerHTML = '<div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p>REQ: ' + formula + '</p></div><input type="text" id="oxy-input" style="padding:10px; border:2px solid black; width:300px;"><p>MATCH TEXT EXACTLY</p>';
+                            const input = document.getElementById("oxy-input");
+                            input.focus();
+                            input.oninput = (e) => { if (e.target.value.toUpperCase() === formula) document.getElementById("conclusion").classList.add("active"); stage3.classList.remove("active"); document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>"; };
                         }
                     }
                 };
                 document.addEventListener("keydown", spaceHandler);
             }
-
-            function goToOxytocin() {
-                const formula = "C43H66N12O12S2";
-                stage3.innerHTML = '<div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p id="sync-message">INPUT_REQ: ' + formula + '</p></div><input type="text" id="oxy-input" style="padding:10px; border:2px solid black; text-align:center; font-family: sans-serif; width: 300px; margin-top: 20px;"><p style="margin-top: 10px;">MATCH TEXT EXACTLY</p>';
-                const input = document.getElementById("oxy-input");
-                input.focus();
-                input.oninput = (e) => {
-                    if (e.target.value.toUpperCase() === formula) {
-                        stage3.classList.remove("active");
-                        conclusion.classList.add("active");
-                        conclusion.innerHTML = "<h1>OXYTOCIN_RELEASED<br>PROCESS_COMPLETE</h1>";
-                    }
-                };
-            }
-
             initStage1();
         `;
     </script>
