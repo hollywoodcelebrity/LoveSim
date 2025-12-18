@@ -18,8 +18,8 @@
     <script id="game-script"></script>
 
     <script>
-        const cssContent = document.getElementById('game-style');
-        const jsContent = document.getElementById('game-script');
+        const cssContent = document.getElementById("game-style");
+        const jsContent = document.getElementById("game-script");
         
         cssContent.innerHTML = `
             body {
@@ -65,23 +65,25 @@
                 100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
             }
 
+            /* TARGET SIDE RINGS (PASTEL TURQUOISE) */
             .profile-wrapper.target::before, .profile-wrapper.target::after {
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
-                border: 2px solid black; transform: translate(-50%, -50%) scale(0.1);
+                border: 3px solid #afeeee; transform: translate(-50%, -50%) scale(0.1);
                 animation: radial-pulse 4s linear infinite; z-index: -1;
             }
             .profile-wrapper.target::after { animation-delay: 2s; }
 
             .approach-ring {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.2);
+                border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1);
                 animation: approach-circle 4s linear infinite; z-index: -1;
             }
 
+            /* PLAYER SIDE RINGS (PASTEL PINK) */
             .player-ripple {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 2px solid black;
+                border-radius: 50%; border: 3px solid #fbcce7;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
@@ -92,7 +94,7 @@
             #judgment-text { font-size: 2em; font-weight: bold; height: 1.2em; margin: 10px 0; }
             #sync-message { font-size: 1em; opacity: 0.7; color: #333; margin: 0; }
             h2 { margin: 0; font-weight: 700; font-size: 1.5em; text-align: left; }
-            h3 { font-weight: 700; margin-top: 20px; text-align: center; width: 100%; }
+            #score-display { font-weight: 700; margin-top: 20px; text-align: center; width: 100%; }
 
             #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
             .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
@@ -135,10 +137,10 @@
                     }
                 });
 
-                if (diff <= 350) {
+                if (diff <= 400) {
                     playerClicks.push("synced");
                     judgment.textContent = "STATUS: PERFECT";
-                } else if (diff <= 650) {
+                } else if (diff <= 750) {
                     playerClicks.push("synced");
                     judgment.textContent = "STATUS: GOOD";
                 } else {
@@ -169,7 +171,7 @@
                 for (let i = 0; i < 20; i++) {
                     const m = document.createElement("div");
                     m.className = "microbe";
-                    m.style.backgroundColor = (i < 10 ? "#333" : "#ccc");
+                    m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
                     m.id = "microbe-" + i;
                     m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + "%";
                     m.style.top = Math.random()*85 + "%";
