@@ -176,7 +176,7 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: DIVE DEEPER // DOWN ARROW: RETRACT</p>
+                    <p style="font-size:0.8em; opacity:0.7;">UP ARROW: SLOW TRAVERSAL // DOWN ARROW: RETRACT</p>
                 </div>
                 <div id="three-container"></div>
                 <div id="zoom-ui">
@@ -209,13 +209,16 @@
                 model.position.x -= 0.5;
                 scene.add(model);
 
-                // Path tracking variables
+                // Adjusted start and end for longer traversal
                 let startZ = -size.z * 0.15; 
-                let endZ = size.z * 1.1; 
+                let endZ = size.z * 1.5; // Significantly longer path
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
                     currentZoom += delta;
+                    // Clamp at the start
+                    if (currentZoom < startZ) currentZoom = startZ;
+                    
                     const progress = Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100;
                     const fill = document.getElementById("zoom-bar-fill");
                     if(fill) fill.style.width = Math.min(100, progress) + "%";
@@ -228,8 +231,9 @@
                 }
 
                 function handleKeyZoom(e) {
-                    if (e.key === "ArrowUp") updateZoom(size.z / 120); 
-                    if (e.key === "ArrowDown") updateZoom(-(size.z / 120));
+                    // Slower speed: size.z / 250 (was 120)
+                    if (e.key === "ArrowUp") updateZoom(size.z / 250); 
+                    if (e.key === "ArrowDown") updateZoom(-(size.z / 250));
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
@@ -240,9 +244,7 @@
                     requestAnimationFrame(animate);
                     
                     camera.position.z = currentZoom;
-                    // Adjusted X to maintain centerline alignment based on rotation
                     camera.position.x = Math.sin(currentZoom * 0.1) * 0.2; 
-                    
                     camera.lookAt(0, 0, currentZoom + 1);
                     
                     pointLight.position.copy(camera.position);
