@@ -43,7 +43,6 @@
             100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
         }
 
-        /* Target Side: Pastel Turquoise */
         .profile-wrapper.target::before, .profile-wrapper.target::after {
             content: ''; position: absolute; top: 50%; left: 50%;
             width: 100%; height: 100%; border-radius: 50%;
@@ -58,7 +57,6 @@
             animation: approach-circle 4s linear infinite; z-index: -1;
         }
 
-        /* Player Side: Pastel Pink */
         .player-ripple {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
             border-radius: 50%; border: 3px solid #fbcce7;
@@ -67,9 +65,9 @@
         }
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
-        #three-container { width: 100%; height: 400px; margin-top: 20px; border: 2px solid black; background: #111; }
-        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
-        .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
+        #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: #0a0a0a; }
+        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; }
+        .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
     </style>
 </head>
 <body>
@@ -165,16 +163,16 @@
             const container = document.getElementById("three-container");
             
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x111111);
-            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            scene.background = new THREE.Color(0x050505);
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            const ambient = new THREE.AmbientLight(0xffffff, 1.5); 
+            const ambient = new THREE.AmbientLight(0xffffff, 1.8); 
             scene.add(ambient);
-            const light = new THREE.PointLight(0xffffff, 10);
-            light.position.set(5, 5, 5);
+            const light = new THREE.DirectionalLight(0xffffff, 2);
+            light.position.set(0, 10, 10);
             scene.add(light);
 
             const loader = new GLTFLoader();
@@ -183,16 +181,23 @@
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
+                
+                // ROTATE 90 DEGREES TO FACE FRONT
+                model.rotation.y = Math.PI / 2; 
+                
                 scene.add(model);
                 
-                let zoomVal = 10;
+                let zoomVal = 12; // Start further away
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
-                    zoomVal -= 0.05;
+                    
+                    // SLOWER ZOOM RATE
+                    zoomVal -= 0.02; 
                     camera.position.z = zoomVal;
-                    model.rotation.y += 0.01;
-                    if (zoomVal <= 3) {
+                    camera.lookAt(0, 0, 0);
+
+                    if (zoomVal <= 3.5) {
                         renderer.dispose();
                         renderMicrobeView();
                     } else {
@@ -201,14 +206,14 @@
                 }
                 animate();
             }, undefined, (err) => {
-                console.error("3D Model Error:", err);
+                console.error("3D Load Failed", err);
                 setTimeout(renderMicrobeView, 2000);
             });
         }
 
         function renderMicrobeView() {
             stage2.innerHTML = `
-                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div>
+                <div class="text-header-container"><h3>MIXING_MICROBIOTA</h3><p style="font-size:0.9em; opacity:0.7;">STABILIZING ENVIRONMENT...</p></div>
                 <div id="microbe-container"></div>
                 <p id="mix-status">MIX_STATUS: 0 / 10</p>`;
             const container = document.getElementById("microbe-container");
@@ -219,26 +224,40 @@
                 m.className = "microbe";
                 m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
                 m.id = "m-" + i;
-                m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + "%";
-                m.style.top = Math.random()*85 + "%";
+                // Randomized static positions
+                m.style.left = (i < 10 ? Math.random()*25 + 5 : Math.random()*25 + 70) + "%";
+                m.style.top = Math.random()*80 + 10 + "%";
                 m.draggable = true;
-                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+                
+                m.ondragstart = (e) => {
+                    e.dataTransfer.setData("text", e.target.id);
+                };
                 container.appendChild(m);
             }
 
             container.ondragover = (e) => e.preventDefault();
             container.ondrop = (e) => {
                 e.preventDefault();
-                const el = document.getElementById(e.dataTransfer.getData("text"));
+                const id = e.dataTransfer.getData("text");
+                const el = document.getElementById(id);
+                if (!el) return;
+                
                 const rect = container.getBoundingClientRect();
-                el.style.left = (e.clientX - rect.left - 10) + "px";
-                el.style.top = (e.clientY - rect.top - 10) + "px";
-                if (!el.dataset.isMixed && Math.abs((e.clientX - rect.left) - rect.width/2) < rect.width/5) {
-                    el.style.backgroundColor = "black";
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                el.style.left = (x - 11) + 'px';
+                el.style.top = (y - 11) + 'px';
+
+                // Check if dropped in the center third of the container
+                if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/6) {
+                    el.style.backgroundColor = "#333"; // Changed to dark when mixed
                     el.dataset.isMixed = "true";
                     mixedCount++;
                     document.getElementById("mix-status").textContent = "MIX_STATUS: " + mixedCount + " / 10";
-                    if (mixedCount >= 10) setTimeout(initStage3, 1000);
+                    if (mixedCount >= 10) {
+                        setTimeout(initStage3, 800);
+                    }
                 }
             };
         }
@@ -249,7 +268,7 @@
             stage3.innerHTML = `
                 <div class="text-header-container"><h2>STAGE 3: VASODILATION</h2></div>
                 <div style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;">
-                    <div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div>
+                    <div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s; pointer-events:none;"></div>
                 </div>
                 <p>PRESS SPACE REPEATEDLY</p>
                 <p id="heat-level">HEAT_LEVEL: 0%</p>`;
@@ -273,15 +292,15 @@
             const formula = "C43H66N12O12S2";
             stage3.innerHTML = `
                 <div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p>REQ: ${formula}</p></div>
-                <input type="text" id="oxy-input" style="padding:10px; border:2px solid black; width:300px; font-family: 'Source Code Pro', monospace;">
-                <p>MATCH TEXT EXACTLY</p>`;
+                <input type="text" id="oxy-input" spellcheck="false" autocomplete="off" style="padding:10px; border:2px solid black; width:320px; font-family: 'Source Code Pro', monospace; font-size: 1.1em; outline: none;">
+                <p style="margin-top:15px; font-size:0.8em; opacity:0.6;">MATCH ENCRYPTED STRING EXACTLY</p>`;
             const input = document.getElementById("oxy-input");
             input.focus();
             input.oninput = (e) => {
                 if (e.target.value.toUpperCase() === formula) {
                     document.getElementById("conclusion").classList.add("active");
                     stage3.classList.remove("active");
-                    document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>";
+                    document.getElementById("conclusion").innerHTML = "<h2 style='text-align:center;'>OXYTOCIN_RELEASED<br>NEURAL_BOND_STABILIZED<br>PROCESS_COMPLETE</h2>";
                 }
             };
         }
