@@ -12,7 +12,7 @@
             margin: 0; background-color: white; color: black;
             font-family: "Source Code Pro", monospace; overflow: hidden; box-sizing: border-box;
         }
-        #game-container { width: 100%; height: 100%; position: relative; }
+        #game-container { width: 100%; height: 100%; position: relative; transition: transform 0.1s ease-out; }
         .game-stage {
             display: none; width: 100%; height: 100%; position: absolute;
             top: 0; left: 0; justify-content: center; align-items: center;
@@ -116,41 +116,41 @@
         const stage1 = document.getElementById("stage-1");
         const stage2 = document.getElementById("stage-2");
         const stage3 = document.getElementById("stage-3");
+        const container = document.getElementById("game-container");
         
-        // --- AUDIO ENGINE ---
+        // --- REFINED AUDIO ENGINE ---
         let audioCtx;
-        function playHeartbeat(rate = 1, volume = 0.5) {
+        function triggerHeartbeat(volume = 0.5) {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
             const now = audioCtx.currentTime;
             
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(60, now);
-            osc.frequency.exponentialRampToValueAtTime(0.01, now + 0.1);
-            gain.gain.setValueAtTime(volume, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.1);
+            // First Beat
+            const osc1 = audioCtx.createOscillator();
+            const gain1 = audioCtx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(55, now);
+            osc1.frequency.exponentialRampToValueAtTime(0.01, now + 0.12);
+            gain1.gain.setValueAtTime(volume, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+            osc1.connect(gain1); gain1.connect(audioCtx.destination);
+            osc1.start(); osc1.stop(now + 0.12);
 
-            // Second thud
+            // Second Beat
             const osc2 = audioCtx.createOscillator();
             const gain2 = audioCtx.createGain();
             osc2.type = 'sine';
-            osc2.frequency.setValueAtTime(45, now + 0.15);
-            osc2.frequency.exponentialRampToValueAtTime(0.01, now + 0.25);
-            gain2.gain.setValueAtTime(volume * 0.7, now + 0.15);
-            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.start(); osc2.stop(now + 0.25);
-        }
+            osc2.frequency.setValueAtTime(40, now + 0.14);
+            osc2.frequency.exponentialRampToValueAtTime(0.01, now + 0.28);
+            gain2.gain.setValueAtTime(volume * 0.6, now + 0.14);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+            osc2.connect(gain2); gain2.connect(audioCtx.destination);
+            osc2.start(); osc2.stop(now + 0.28);
 
-        let heartTimer;
-        function setHeartRate(ms) {
-            clearInterval(heartTimer);
-            heartTimer = setInterval(() => playHeartbeat(1, 0.4), ms);
+            // Visual Thump
+            container.style.transform = "scale(1.02)";
+            setTimeout(() => { container.style.transform = "scale(1)"; }, 100);
         }
 
         const targetInterval = 4000; 
@@ -172,17 +172,18 @@
             
             setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
             document.addEventListener("click", () => {
-                if (audioCtx?.state === 'suspended') audioCtx.resume();
-                handleSyncClick();
+                if (stage1.classList.contains("active")) {
+                    triggerHeartbeat(0.4);
+                    handleSyncClick();
+                }
             });
         }
 
         function handleSyncClick() {
-            if (!stage1.classList.contains("active")) return;
             const diff = Math.min((performance.now() - lastTargetBeat) % targetInterval, targetInterval - ((performance.now() - lastTargetBeat) % targetInterval));
             const ripple = document.getElementById("player-ripple-1");
             if(ripple) { ripple.classList.remove("ripple-active"); void ripple.offsetWidth; ripple.classList.add("ripple-active"); }
-            if (diff <= 500) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; playHeartbeat(1, 0.6); }
+            if (diff <= 500) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; }
             else { playerClicks = []; document.getElementById("judgment-text").textContent = "STATUS: MISSED"; }
             document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
             if (playerClicks.length >= 5) { setTimeout(initStage2, 1000); }
@@ -197,11 +198,11 @@
 
         function run3DIntestine() {
             stage2.innerHTML = `<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div><div id="zoom-ui" style="position:absolute; bottom:40px; right:40px; background:rgba(255,255,255,0.9); padding:15px; border:1px solid black; z-index:100;">PENETRATION_DEPTH<div style="width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd;"><div id="zoom-bar-fill" style="width:0%; height:100%; background:#afeeee;"></div></div></div>`;
-            const container = document.getElementById("three-container");
+            const container3d = document.getElementById("three-container");
             const scene = new THREE.Scene(); scene.background = new THREE.Color(0xffffff);
             const camera = new THREE.PerspectiveCamera(85, window.innerWidth / window.innerHeight, 0.01, 3000);
             const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
+            container3d.appendChild(renderer.domElement);
             scene.add(new THREE.AmbientLight(0xffffff, 3.5));
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
@@ -210,7 +211,9 @@
                 let startZ = -size.z * 0.15, endZ = size.z * 1.5, currentZoom = startZ;
                 window.addEventListener("keydown", (e) => {
                     if (e.key === "ArrowUp") currentZoom += (size.z / 250); if (e.key === "ArrowDown") currentZoom -= (size.z / 250);
-                    document.getElementById("zoom-bar-fill").style.width = Math.min(100, Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100) + "%";
+                    if (currentZoom < startZ) currentZoom = startZ;
+                    const fill = document.getElementById("zoom-bar-fill");
+                    if(fill) fill.style.width = Math.min(100, Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100) + "%";
                     if (currentZoom >= endZ) { renderer.dispose(); renderMicrobeView(); }
                 });
                 camera.position.z = startZ;
@@ -221,15 +224,15 @@
 
         function renderMicrobeView() {
             stage2.innerHTML = `<div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div><div id="microbe-full-container"><div style="position: absolute; left: 50%; top: 0; width: 20vw; height: 100vh; transform: translateX(-50%); border-left: 1px dashed rgba(0,0,0,0.1); border-right: 1px dashed rgba(0,0,0,0.1); background: rgba(0,0,0,0.02); pointer-events: none;"></div></div><div id="mix-status-floating" style="position: absolute; bottom: 40px; left: 40px; background: rgba(255,255,255,0.9); border: 1px solid black; padding: 15px; font-weight: bold; z-index: 100;">MIX_STATUS: 0 / 10</div>`;
-            const container = document.getElementById("microbe-full-container");
+            const containerFull = document.getElementById("microbe-full-container");
             let mixedCount = 0;
             for (let i = 0; i < 20; i++) {
                 const m = document.createElement("div"); m.className = "microbe"; m.style.backgroundColor = (i < 10 ? "#afeeee" : "#39ff14"); m.id = "m-" + i;
                 m.style.left = (i < 10 ? Math.random()*30 : Math.random()*30 + 70) + "vw"; m.style.top = Math.random()*80 + 10 + "vh"; m.draggable = true;
-                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id); container.appendChild(m);
+                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id); containerFull.appendChild(m);
             }
-            container.ondragover = (e) => e.preventDefault();
-            container.ondrop = (e) => {
+            containerFull.ondragover = (e) => e.preventDefault();
+            containerFull.ondrop = (e) => {
                 const el = document.getElementById(e.dataTransfer.getData("text"));
                 el.style.left = (e.clientX - 22) + 'px'; el.style.top = (e.clientY - 22) + 'px';
                 if (!el.dataset.isMixed && Math.abs(e.clientX - window.innerWidth/2) < window.innerWidth * 0.1) {
@@ -244,13 +247,12 @@
             stage2.classList.remove("active"); stage3.classList.add("active");
             stage3.innerHTML = `<div id="vaso-tide"></div><div class="text-header-container vaso-ui-layer" id="vaso-header"><h2>STAGE 3: VASODILATION</h2><p id="vaso-sub">RAPIDLY PULSE SPACEBAR</p></div><p class="vaso-ui-layer" id="heat-level" style="font-size: 1.5em; font-weight: bold;">SURGE: 0%</p>`;
             let presses = 0;
-            setHeartRate(1000);
             document.addEventListener("keydown", (e) => {
-                if (e.code === "Space") {
+                if (e.code === "Space" && stage3.classList.contains("active")) {
+                    triggerHeartbeat(0.5);
                     presses++; const pct = Math.min(100, (presses / 40) * 100);
                     document.getElementById("vaso-tide").style.height = pct + "%";
                     document.getElementById("heat-level").textContent = "SURGE: " + Math.round(pct) + "%";
-                    setHeartRate(Math.max(200, 1000 - (pct * 8)));
                     if (pct > 50) { document.getElementById("vaso-header").classList.add("inverted"); document.getElementById("heat-level").style.color = "white"; }
                     if (presses >= 40) goToOxytocin();
                 }
@@ -258,12 +260,11 @@
         }
 
         function goToOxytocin() {
-            setHeartRate(300);
             stage3.innerHTML = `<div style="position:absolute; top:0; left:0; width:100vw; height:100vh; background:black; z-index:1;"></div><div class="text-header-container" style="color:white; z-index:10; text-align:center;"><h3>SYNTHESIS: OXYTOCIN</h3><input type="text" id="oxy-input" style="padding:15px; border:2px solid white; background:transparent; color:white; width:350px; font-family:'Source Code Pro'; font-size:1.2em; text-align:center; outline:none; margin-top:20px;"><p style="opacity:0.6; font-size:0.8em; margin-top:10px;">REQ: C43H66N12O12S2</p></div>`;
             const input = document.getElementById("oxy-input"); input.focus();
             input.oninput = (e) => {
                 if (e.target.value.toUpperCase() === "C43H66N12O12S2") {
-                    clearInterval(heartTimer); playHeartbeat(1, 1.0);
+                    triggerHeartbeat(1.0);
                     document.getElementById("conclusion").classList.add("active");
                     stage3.classList.remove("active");
                     document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>";
