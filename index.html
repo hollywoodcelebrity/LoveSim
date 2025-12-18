@@ -44,11 +44,13 @@
             100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
         }
 
+        /* Target Side: Neon Green */
         .profile-wrapper.target::before, .profile-wrapper.target::after {
             content: ''; position: absolute; top: 50%; left: 50%;
             width: 100%; height: 100%; border-radius: 50%;
-            border: 3px solid #afeeee; transform: translate(-50%, -50%) scale(0.1);
+            border: 3px solid #39ff14; transform: translate(-50%, -50%) scale(0.1);
             animation: radial-pulse 4s linear infinite; z-index: -1;
+            filter: drop-shadow(0 0 5px #39ff14);
         }
         .profile-wrapper.target::after { animation-delay: 2s; }
 
@@ -58,9 +60,10 @@
             animation: approach-circle 4s linear infinite; z-index: -1;
         }
 
+        /* Player Side: Pastel Turquoise */
         .player-ripple {
             position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-            border-radius: 50%; border: 3px solid #fbcce7;
+            border-radius: 50%; border: 3px solid #afeeee;
             transform: translate(-50%, -50%) scale(0.1);
             opacity: 0; pointer-events: none; z-index: -1;
         }
@@ -78,7 +81,7 @@
             pointer-events: none; z-index: 100;
         }
         #zoom-bar-container { width: 150px; height: 6px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
-        #zoom-bar-fill { width: 0%; height: 100%; background: #fbcce7; transition: width 0.1s; }
+        #zoom-bar-fill { width: 0%; height: 100%; background: #afeeee; transition: width 0.1s; }
 
         #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; z-index: 5; }
         .microbe { width: 22px; height: 22px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; transition: background-color 0.3s; z-index: 10; }
@@ -209,14 +212,12 @@
                 model.position.x -= 0.5;
                 scene.add(model);
 
-                // Adjusted start and end for longer traversal
                 let startZ = -size.z * 0.15; 
-                let endZ = size.z * 1.5; // Significantly longer path
+                let endZ = size.z * 1.5; 
                 let currentZoom = startZ;
 
                 function updateZoom(delta) {
                     currentZoom += delta;
-                    // Clamp at the start
                     if (currentZoom < startZ) currentZoom = startZ;
                     
                     const progress = Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100;
@@ -231,7 +232,6 @@
                 }
 
                 function handleKeyZoom(e) {
-                    // Slower speed: size.z / 250 (was 120)
                     if (e.key === "ArrowUp") updateZoom(size.z / 250); 
                     if (e.key === "ArrowDown") updateZoom(-(size.z / 250));
                 }
@@ -268,7 +268,8 @@
             for (let i = 0; i < 20; i++) {
                 const m = document.createElement("div");
                 m.className = "microbe";
-                m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
+                // Swapped Microbe colors to match new theme
+                m.style.backgroundColor = (i < 10 ? "#afeeee" : "#39ff14");
                 m.id = "m-" + i;
                 m.style.left = (i < 10 ? Math.random()*25 + 5 : Math.random()*25 + 70) + "%";
                 m.style.top = Math.random()*80 + 10 + "%";
