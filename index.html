@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bio-Love Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
     <style id="game-style"></style>
 </head>
 <body>
@@ -24,8 +25,8 @@
             body {
                 width: 100vw; height: 100vh;
                 display: flex; justify-content: center; align-items: center;
-                margin: 0; background-color: white; color: #111;
-                font-family: 'Arial', sans-serif; overflow: hidden; box-sizing: border-box;
+                margin: 0; background-color: white; color: black;
+                font-family: 'Source Code Pro', monospace; overflow: hidden; box-sizing: border-box;
             }
             #game-container { width: 100%; height: 100%; position: relative; }
             .game-stage {
@@ -42,7 +43,7 @@
             }
             .profile-wrapper {
                 position: relative; width: 35vw; height: 65vh; 
-                filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
+                filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.05));
             }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
@@ -58,11 +59,11 @@
                 100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
             }
 
-            /* TARGET SIDE RINGS (ALWAYS RUNNING) */
+            /* TARGET SIDE RINGS (BLACK) */
             .profile-wrapper.target::before, .profile-wrapper.target::after {
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
-                border: 2px solid #ff477e; transform: translate(-50%, -50%) scale(0.1);
+                border: 2px solid black; transform: translate(-50%, -50%) scale(0.1);
                 animation: radial-pulse 4s linear infinite; z-index: -1;
             }
             .profile-wrapper.target::after { animation-delay: 2s; }
@@ -73,22 +74,23 @@
                 animation: approach-circle 4s linear infinite; z-index: -1;
             }
 
-            /* PLAYER SIDE RINGS (TRIGGERED BY CLICK) */
+            /* PLAYER SIDE RINGS (BLACK, TRIGGERED BY CLICK) */
             .player-ripple {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 2px solid #00ffc8;
+                border-radius: 50%; border: 2px solid black;
                 transform: translate(-50%, -50%) scale(0.1);
                 opacity: 0; pointer-events: none; z-index: -1;
             }
             
             .ripple-active { animation: radial-pulse 4s linear forwards; }
-            #player-ripple-2 { animation-delay: 0.3s; } /* Slight offset for the second ring */
+            #player-ripple-2 { animation-delay: 0.3s; }
 
             #judgment-text {
                 font-size: 2.5em; font-weight: bold; height: 1.2em; margin-bottom: 10px;
-                text-shadow: 0 0 5px rgba(0,0,0,0.1);
+                font-family: 'Source Code Pro', monospace;
             }
-            #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; color: #555; }
+            #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; color: #333; }
+            h2, h3 { font-weight: 700; }
         `;
 
         jsContent.innerHTML = `
@@ -106,9 +108,9 @@
 
                 function initStage1() {
                     stage1.innerHTML = \`
-                        <h2>Stage 1: Neural Synchronization</h2>
+                        <h2>STAGE 1: NEURAL_SYNC</h2>
                         <div id="judgment-text"></div>
-                        <p id="sync-message">The pace is slow. Click to emit your ripples when the gray ring hits the center.</p>
+                        <p id="sync-message">CLICK TO EMIT_RIPPLE WHEN OUTER_RING HITS CENTER</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player" class="profile-image">
@@ -120,7 +122,7 @@
                                 <div class="approach-ring"></div>
                             </div>
                         </div>
-                        <h3 id="score-display">Matched: 0 / 5</h3>
+                        <h3 id="score-display">MATCH_COUNT: 0 / 5</h3>
                     \`;
                     
                     setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
@@ -137,7 +139,6 @@
                     const judgment = document.getElementById('judgment-text');
                     const scoreDisplay = document.getElementById('score-display');
                     
-                    // Trigger both Player Ripples
                     const ripples = [document.getElementById('player-ripple-1'), document.getElementById('player-ripple-2')];
                     ripples.forEach(r => {
                         r.classList.remove('ripple-active');
@@ -147,24 +148,24 @@
 
                     if (diff <= perfectThreshold) {
                         playerClicks.push('synced');
-                        judgment.textContent = "PERFECT!";
-                        judgment.style.color = "#00cc99";
+                        judgment.textContent = "STATUS: PERFECT";
+                        judgment.style.color = "black";
                     } else if (diff <= goodThreshold) {
                         playerClicks.push('synced');
-                        judgment.textContent = "GREAT!";
-                        judgment.style.color = "#ffbb00";
+                        judgment.textContent = "STATUS: GOOD";
+                        judgment.style.color = "#555";
                     } else {
                         playerClicks = []; 
-                        judgment.textContent = timeSinceLastBeat > 2000 ? "TOO EARLY" : "TOO LATE";
-                        judgment.style.color = "#ff477e";
+                        judgment.textContent = timeSinceLastBeat > 2000 ? "STATUS: EARLY" : "STATUS: LATE";
+                        judgment.style.color = "#888";
                     }
 
-                    scoreDisplay.textContent = "Matched: " + playerClicks.length + " / 5";
+                    scoreDisplay.textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
 
                     if (playerClicks.length >= 5) {
                         document.removeEventListener('click', handleSyncClick);
-                        judgment.textContent = "SYNCHRONIZED!";
-                        judgment.style.color = "#111";
+                        judgment.textContent = "SYNC_COMPLETE";
+                        judgment.style.color = "black";
                         setTimeout(() => {
                             stage1.classList.remove('active');
                             stage2.classList.add('active');
@@ -174,18 +175,18 @@
                 }
 
                 function initStage2() {
-                    stage2.innerHTML = \`<h2>Stage 2: Microbial Exchange</h2><p>The profiles approach...</p><div id="zoom-bullseye" style="padding:20px; background:#ff477e; color:white; cursor:pointer; border-radius:10px; font-weight:bold;">ZOOM IN</div>\`;
+                    stage2.innerHTML = \`<h2>STAGE 2: MICROBIAL_EXCHANGE</h2><p>PROFILES_APPROACHING...</p><div id="zoom-bullseye" style="padding:20px; border:2px solid black; background:white; color:black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>\`;
                     document.getElementById('zoom-bullseye').onclick = renderMicrobeView;
                 }
 
                 function renderMicrobeView() {
-                    stage2.innerHTML = \`<h3>Mixing Microbiota (Drag to Center)</h3><div id="microbe-container" style="width:80%; max-width:600px; aspect-ratio:16/9; border:2px solid #ccc; position:relative; background:#f9f9f9; margin-top:20px;"></div><p id="mix-status">Mixed: 0 / 10</p>\`;
+                    stage2.innerHTML = \`<h3>MIXING_MICROBIOTA (DRAG TO CENTER)</h3><div id="microbe-container" style="width:80%; max-width:600px; aspect-ratio:16/9; border:2px solid black; position:relative; background:white; margin-top:20px;"></div><p id="mix-status">MIX_STATUS: 0 / 10</p>\`;
                     const container = document.getElementById('microbe-container');
                     let mixedCount = 0;
                     for (let i = 0; i < 20; i++) {
                         const m = document.createElement('div');
-                        m.style.cssText = "width:20px; height:20px; border-radius:50%; position:absolute; cursor:grab;";
-                        m.style.backgroundColor = (i < 10 ? '#ff6347' : '#4682b4');
+                        m.style.cssText = "width:20px; height:20px; border-radius:50%; position:absolute; cursor:grab; border:1px solid black;";
+                        m.style.backgroundColor = (i < 10 ? '#333' : '#ccc');
                         m.id = 'microbe-' + i;
                         m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + '%';
                         m.style.top = Math.random()*85 + '%';
@@ -204,10 +205,10 @@
                         el.style.left = (x - 10) + 'px';
                         el.style.top = (y - 10) + 'px';
                         if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/5) {
-                            el.style.backgroundColor = 'purple';
+                            el.style.backgroundColor = 'black';
                             el.dataset.isMixed = "true";
                             mixedCount++;
-                            document.getElementById('mix-status').textContent = "Mixed: " + mixedCount + " / 10";
+                            document.getElementById('mix-status').textContent = "MIX_STATUS: " + mixedCount + " / 10";
                             if (mixedCount >= 10) setTimeout(initStage3, 1000);
                         }
                     };
@@ -216,14 +217,14 @@
                 function initStage3() {
                     stage2.classList.remove('active');
                     stage3.classList.add('active');
-                    stage3.innerHTML = \`<h2>Stage 3: Vasodilation</h2><div id="heat-profiles" style="width:400px; height:150px; background:#eee; margin:20px 0; border:1px solid #ccc; position:relative;"><div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div></div><p>Press SPACE repeatedly!</p><p id="heat-level">Heat: 0%</p>\`;
+                    stage3.innerHTML = \`<h2>STAGE 3: VASODILATION</h2><div id="heat-profiles" style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;"><div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div></div><p>PRESS SPACE REPEATEDLY</p><p id="heat-level">HEAT_LEVEL: 0%</p>\`;
                     let presses = 0;
                     const spaceHandler = (e) => {
                         if (e.code === 'Space') {
                             presses++;
                             const pct = Math.min(100, (presses / 30) * 100);
-                            document.getElementById('heat-level').textContent = "Heat: " + Math.round(pct) + "%";
-                            document.getElementById('heat-overlay').style.backgroundColor = "rgba(255, 69, 0, " + (pct/150) + ")";
+                            document.getElementById('heat-level').textContent = "HEAT_LEVEL: " + Math.round(pct) + "%";
+                            document.getElementById('heat-overlay').style.backgroundColor = "rgba(0, 0, 0, " + (pct/100) + ")";
                             if (presses >= 30) {
                                 document.removeEventListener('keydown', spaceHandler);
                                 goToOxytocin();
@@ -235,14 +236,14 @@
 
                 function goToOxytocin() {
                     const formula = 'C43H66N12O12S2';
-                    stage3.innerHTML = \`<h3>Synthesis: Oxytocin</h3><p>Type: <strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; border:2px solid #333; text-align:center;"><p>Match text exactly!</p>\`;
+                    stage3.innerHTML = \`<h3>SYNTHESIS: OXYTOCIN</h3><p>INPUT_REQ: <strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; border:2px solid black; text-align:center; font-family:'Source Code Pro', monospace;"><p>MATCH TEXT EXACTLY</p>\`;
                     const input = document.getElementById('oxy-input');
                     input.focus();
                     input.oninput = (e) => {
                         if (e.target.value.toUpperCase() === formula) {
                             stage3.classList.remove('active');
                             conclusion.classList.add('active');
-                            conclusion.innerHTML = "<h1 style='color:#ff477e;'>YOU ARE IN LOVE!</h1>";
+                            conclusion.innerHTML = "<h1>OXYTOCIN_RELEASED<br>PROCESS_COMPLETE</h1>";
                         }
                     };
                 }
