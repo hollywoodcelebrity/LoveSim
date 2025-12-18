@@ -137,12 +137,12 @@
 
                 const loader = new THREE.GLTFLoader();
                 // REPLACE 'intestine.glb' WITH YOUR FILE NAME
-                loader.load('intestine.glb', (gltf) => {
+                loader.load('SMALL_INTESTINE.glb', (gltf) => {
                     scene.add(gltf.scene);
                     gltf.scene.position.set(0, 0, 0);
                     animate();
                 }, undefined, (error) => {
-                    console.error("3D Model load failed. Ensure intestine.glb is in the folder.");
+                    console.error("3D Model load failed. Ensure SMALL_INTESTINE.glb is in the folder.");
                     // Fallback to manual stage if model fails
                     setTimeout(renderMicrobeView, 2000);
                 });
