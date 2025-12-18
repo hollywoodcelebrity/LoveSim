@@ -7,7 +7,68 @@
     <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/loaders/GLTFLoader.js"></script>
-    <style id="game-style"></style>
+    <style>
+        body {
+            width: 100vw; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0; background-color: white; color: black;
+            font-family: "Source Code Pro", monospace; overflow: hidden; box-sizing: border-box;
+        }
+        #game-container { width: 100%; height: 100%; position: relative; }
+        .game-stage {
+            display: none; width: 100%; height: 100%; position: absolute;
+            top: 0; left: 0; justify-content: center; align-items: center;
+            flex-direction: column; transition: opacity 0.5s;
+            padding: 40px; box-sizing: border-box;
+        }
+        .game-stage.active { display: flex; }
+
+        .text-header-container {
+            width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
+        }
+
+        #profiles-container {
+            display: flex; justify-content: space-around; 
+            width: 90vw; height: 60vh; align-items: flex-end;
+            margin-top: auto;
+        }
+        .profile-wrapper { position: relative; width: 35vw; height: 55vh; }
+        .profile-image { width: 100%; height: 100%; object-fit: contain; }
+        
+        @keyframes radial-pulse {
+            0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
+            100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+        }
+        @keyframes approach-circle {
+            0% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
+            20% { opacity: 0.4; }
+            100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
+        }
+
+        .profile-wrapper.target::before, .profile-wrapper.target::after {
+            content: ''; position: absolute; top: 50%; left: 50%;
+            width: 100%; height: 100%; border-radius: 50%;
+            border: 3px solid #afeeee; transform: translate(-50%, -50%) scale(0.1);
+            animation: radial-pulse 4s linear infinite; z-index: -1;
+        }
+        .profile-wrapper.target::after { animation-delay: 2s; }
+        .approach-ring {
+            position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1);
+            animation: approach-circle 4s linear infinite; z-index: -1;
+        }
+        .player-ripple {
+            position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+            border-radius: 50%; border: 3px solid #fbcce7;
+            transform: translate(-50%, -50%) scale(0.1);
+            opacity: 0; pointer-events: none; z-index: -1;
+        }
+        .ripple-active { animation: radial-pulse 4s linear forwards; }
+
+        #three-container { width: 100%; height: 400px; margin-top: 20px; border: 2px solid black; background: #000; }
+        #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
+        .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
+    </style>
 </head>
 <body>
     <div id="game-container">
@@ -17,227 +78,208 @@
         <div id="conclusion" class="game-stage"></div>
     </div>
     
-    <script id="game-script"></script>
-
     <script>
-        const cssContent = document.getElementById("game-style");
-        const jsContent = document.getElementById("game-script");
-        
-        cssContent.innerHTML = `
-            body {
-                width: 100vw; height: 100vh;
-                display: flex; justify-content: center; align-items: center;
-                margin: 0; background-color: white; color: black;
-                font-family: "Source Code Pro", monospace; overflow: hidden; box-sizing: border-box;
-            }
-            #game-container { width: 100%; height: 100%; position: relative; }
-            .game-stage {
-                display: none; width: 100%; height: 100%; position: absolute;
-                top: 0; left: 0; justify-content: center; align-items: center;
-                flex-direction: column; transition: opacity 0.5s;
-                padding: 40px; box-sizing: border-box;
-            }
-            .game-stage.active { display: flex; }
+        const stage1 = document.getElementById("stage-1");
+        const stage2 = document.getElementById("stage-2");
+        const stage3 = document.getElementById("stage-3");
+        const targetInterval = 4000; 
+        let playerClicks = [];
+        let lastTargetBeat = performance.now();
 
-            .text-header-container {
-                width: 100%; text-align: left; margin-bottom: 20px; max-width: 90vw;
-            }
-
-            #profiles-container {
-                display: flex; justify-content: space-around; 
-                width: 90vw; height: 60vh; align-items: flex-end;
-                margin-top: auto;
-            }
-            .profile-wrapper { position: relative; width: 35vw; height: 55vh; }
-            .profile-image { width: 100%; height: 100%; object-fit: contain; }
+        function initStage1() {
+            stage1.innerHTML = `
+                <div class="text-header-container">
+                    <h2>STAGE 1: NEURAL_SYNC</h2>
+                    <div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div>
+                    <p style="font-size:1em; opacity:0.7;">CLICK WHEN OUTER_RING HITS CENTER</p>
+                </div>
+                <div id="profiles-container">
+                    <div class="profile-wrapper" id="player-profile">
+                        <img src="player_profile.png" alt="P1" class="profile-image">
+                        <div id="player-ripple-1" class="player-ripple"></div>
+                    </div>
+                    <div class="profile-wrapper target" id="target-profile">
+                        <img src="target_profile.png" alt="T1" class="profile-image">
+                        <div class="approach-ring"></div>
+                    </div>
+                </div>
+                <h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>`;
             
-            @keyframes radial-pulse {
-                0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
-                100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
-            }
-            @keyframes approach-circle {
-                0% { transform: translate(-50%, -50%) scale(2.5); opacity: 0; }
-                20% { opacity: 0.4; }
-                100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
-            }
+            setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
+            document.addEventListener("click", handleSyncClick);
+        }
 
-            .profile-wrapper.target::before, .profile-wrapper.target::after {
-                content: ''; position: absolute; top: 50%; left: 50%;
-                width: 100%; height: 100%; border-radius: 50%;
-                border: 3px solid #afeeee; transform: translate(-50%, -50%) scale(0.1);
-                animation: radial-pulse 4s linear infinite; z-index: -1;
-            }
-            .profile-wrapper.target::after { animation-delay: 2s; }
-            .approach-ring {
-                position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.1);
-                animation: approach-circle 4s linear infinite; z-index: -1;
-            }
-            .player-ripple {
-                position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 3px solid #fbcce7;
-                transform: translate(-50%, -50%) scale(0.1);
-                opacity: 0; pointer-events: none; z-index: -1;
-            }
-            .ripple-active { animation: radial-pulse 4s linear forwards; }
-
-            #three-container { width: 100%; height: 300px; margin-top: 20px; border: 2px solid black; background: #000; }
-            #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; }
-            .microbe { width: 20px; height: 20px; border-radius: 50%; position: absolute; cursor: grab; border: 1px solid black; }
-        `;
-
-        jsContent.innerHTML = `
-            const stage1 = document.getElementById("stage-1");
-            const stage2 = document.getElementById("stage-2");
-            const stage3 = document.getElementById("stage-3");
-            const targetInterval = 4000; 
-            let playerClicks = [];
-            let lastTargetBeat = performance.now();
-
-            function initStage1() {
-                stage1.innerHTML = '<div class="text-header-container"><h2>STAGE 1: NEURAL_SYNC</h2><div id="judgment-text" style="font-size:2em; font-weight:bold; height:1.2em; margin:10px 0;">STATUS: AWAITING_INPUT</div><p style="font-size:1em; opacity:0.7;">CLICK WHEN OUTER_RING HITS CENTER</p></div><div id="profiles-container"><div class="profile-wrapper" id="player-profile"><img src="player_profile.png" alt="P1" class="profile-image"><div id="player-ripple-1" class="player-ripple"></div></div><div class="profile-wrapper target" id="target-profile"><img src="target_profile.png" alt="T1" class="profile-image"><div class="approach-ring"></div></div></div><h3 id="score-display" style="text-align:center; width:100%;">MATCH_COUNT: 0 / 5</h3>';
-                setInterval(() => { lastTargetBeat = performance.now(); }, targetInterval);
-                document.addEventListener("click", handleSyncClick);
+        function handleSyncClick(e) {
+            if (!stage1.classList.contains("active")) return;
+            const now = performance.now();
+            const timeInLoop = (now - lastTargetBeat) % targetInterval;
+            const diff = Math.min(timeInLoop, targetInterval - timeInLoop);
+            
+            const ripple = document.getElementById("player-ripple-1");
+            if(ripple) { 
+                ripple.classList.remove("ripple-active"); 
+                void ripple.offsetWidth; 
+                ripple.classList.add("ripple-active"); 
             }
 
-            function handleSyncClick() {
-                if (!stage1.classList.contains("active")) return;
-                const diff = Math.min((performance.now() - lastTargetBeat) % targetInterval, targetInterval - ((performance.now() - lastTargetBeat) % targetInterval));
-                const ripple = document.getElementById("player-ripple-1");
-                if(ripple) { ripple.classList.remove("ripple-active"); void ripple.offsetWidth; ripple.classList.add("ripple-active"); }
-
-                if (diff <= 400) { playerClicks.push("synced"); document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; }
-                else { playerClicks = []; document.getElementById("judgment-text").textContent = "STATUS: MISSED"; }
-
-                document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
-                if (playerClicks.length >= 5) { document.removeEventListener("click", handleSyncClick); setTimeout(initStage2, 1000); }
+            if (diff <= 500) { 
+                playerClicks.push("synced"); 
+                document.getElementById("judgment-text").textContent = "STATUS: PERFECT"; 
+            } else { 
+                playerClicks = []; 
+                document.getElementById("judgment-text").textContent = "STATUS: MISSED"; 
             }
 
-            function initStage2() {
-                stage1.classList.remove("active");
-                stage2.classList.add("active");
-                stage2.innerHTML = '<div class="text-header-container"><h2>STAGE 2: MICROBIAL_EXCHANGE</h2></div><div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>';
-                document.getElementById("zoom-bullseye").onclick = run3DIntestine;
+            document.getElementById("score-display").textContent = "MATCH_COUNT: " + playerClicks.length + " / 5";
+            if (playerClicks.length >= 5) { 
+                document.removeEventListener("click", handleSyncClick); 
+                setTimeout(initStage2, 1000); 
             }
-function run3DIntestine() {
-                stage2.innerHTML = '<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div>';
-                const container = document.getElementById("three-container");
+        }
+
+        function initStage2() {
+            stage1.classList.remove("active");
+            stage2.classList.add("active");
+            stage2.innerHTML = `
+                <div class="text-header-container">
+                    <h2>STAGE 2: MICROBIAL_EXCHANGE</h2>
+                </div>
+                <div id="zoom-bullseye" style="padding:20px; border:2px solid black; cursor:pointer; font-weight:bold;">INIT_ZOOM</div>`;
+            document.getElementById("zoom-bullseye").onclick = run3DIntestine;
+        }
+
+        function run3DIntestine() {
+            stage2.innerHTML = '<div class="text-header-container"><h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3></div><div id="three-container"></div>';
+            const container = document.getElementById("three-container");
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x111111);
+
+            const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 1.2); 
+            scene.add(ambient);
+            const point = new THREE.PointLight(0xffffff, 2);
+            point.position.set(5, 5, 5);
+            scene.add(point);
+
+            const loader = new THREE.GLTFLoader();
+            loader.load('SMALL_INTESTINE.glb', (gltf) => {
+                const model = gltf.scene;
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                scene.add(model);
                 
-                const scene = new THREE.Scene();
-                scene.background = new THREE.Color(0x000000); // Dark space for the map
-
-                const camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
-                const renderer = new THREE.WebGLRenderer({ antialias: true });
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                renderer.outputColorSpace = THREE.SRGBColorSpace; // Ensures colors look like Blender
-                container.appendChild(renderer.domElement);
-
-                // --- STUDIO LIGHTING SETUP ---
-                // 1. Ambient Light (Soft base lighting so it's never pitch black)
-                const ambient = new THREE.AmbientLight(0xffffff, 0.5); 
-                scene.add(ambient);
-
-                // 2. Point Light (Placed in front of the object to create depth)
-                const pointLight = new THREE.PointLight(0xffffff, 50);
-                pointLight.position.set(2, 3, 4);
-                scene.add(pointLight);
-
-                // 3. Directional Light (Simulates sun/overhead studio light)
-                const sunLight = new THREE.DirectionalLight(0xffffff, 2);
-                sunLight.position.set(-2, 2, 2);
-                scene.add(sunLight);
-
-                const loader = new THREE.GLTFLoader();
-                loader.load('SMALL_INTESTINE.glb', (gltf) => {
-                    const model = gltf.scene;
-                    
-                    // Center the model automatically
-                    const box = new THREE.Box3().setFromObject(model);
-                    const center = box.getCenter(new THREE.Vector3());
-                    model.position.sub(center);
-                    
-                    scene.add(model);
-                    animate();
-                }, undefined, (error) => {
-                    console.error("Model failed. Using fallback.");
-                    setTimeout(renderMicrobeView, 2000);
-                });
-
-                camera.position.z = 8; // Start further back
-
+                let zoomVal = 8;
                 function animate() {
+                    if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
-                    // Slow zoom-in effect
-                    if (camera.position.z > 3) {
-                        camera.position.z -= 0.05;
-                    } else {
-                        // After zoom completes, move to the next stage
+                    zoomVal -= 0.04;
+                    camera.position.z = zoomVal;
+                    model.rotation.y += 0.01;
+                    if (zoomVal <= 2.5) {
                         renderer.dispose();
                         renderMicrobeView();
-                        return;
+                    } else {
+                        renderer.render(scene, camera);
                     }
-                    renderer.render(scene, camera);
                 }
-            }
+                animate();
+            }, undefined, (err) => {
+                console.error("3D Load Failed", err);
+                setTimeout(renderMicrobeView, 2000);
+            });
+        }
 
-            function renderMicrobeView() {
-                stage2.innerHTML = '<div class="text-header-container"><h3>MIXING_MICROBIOTA</h3></div><div id="microbe-container"></div><p id="mix-status">MIX_STATUS: 0 / 10</p>';
-                const container = document.getElementById("microbe-container");
-                let mixedCount = 0;
-                for (let i = 0; i < 20; i++) {
-                    const m = document.createElement("div");
-                    m.className = "microbe";
-                    m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
-                    m.id = "m-" + i;
-                    m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + "%";
-                    m.style.top = Math.random()*85 + "%";
-                    m.draggable = true;
-                    m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
-                    container.appendChild(m);
+        function renderMicrobeView() {
+            stage2.innerHTML = `
+                <div class="text-header-container">
+                    <h3>MIXING_MICROBIOTA</h3>
+                </div>
+                <div id="microbe-container"></div>
+                <p id="mix-status">MIX_STATUS: 0 / 10</p>`;
+            const container = document.getElementById("microbe-container");
+            let mixedCount = 0;
+            for (let i = 0; i < 20; i++) {
+                const m = document.createElement("div");
+                m.className = "microbe";
+                m.style.backgroundColor = (i < 10 ? "#fbcce7" : "#afeeee");
+                m.id = "m-" + i;
+                m.style.left = (i < 10 ? Math.random()*20 + 5 : Math.random()*20 + 75) + "%";
+                m.style.top = Math.random()*85 + "%";
+                m.draggable = true;
+                m.ondragstart = (e) => e.dataTransfer.setData("text", e.target.id);
+                container.appendChild(m);
+            }
+            container.ondragover = (e) => e.preventDefault();
+            container.ondrop = (e) => {
+                e.preventDefault();
+                const el = document.getElementById(e.dataTransfer.getData("text"));
+                const rect = container.getBoundingClientRect();
+                el.style.left = (e.clientX - rect.left - 10) + "px";
+                el.style.top = (e.clientY - rect.top - 10) + "px";
+                if (!el.dataset.isMixed && Math.abs((e.clientX - rect.left) - rect.width/2) < rect.width/5) {
+                    el.style.backgroundColor = "black";
+                    el.dataset.isMixed = "true";
+                    mixedCount++;
+                    document.getElementById("mix-status").textContent = "MIX_STATUS: " + mixedCount + " / 10";
+                    if (mixedCount >= 10) setTimeout(initStage3, 1000);
                 }
-                container.ondragover = (e) => e.preventDefault();
-                container.ondrop = (e) => {
-                    e.preventDefault();
-                    const el = document.getElementById(e.dataTransfer.getData("text"));
-                    const rect = container.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    el.style.left = (x - 10) + "px";
-                    el.style.top = (e.clientY - rect.top - 10) + "px";
-                    if (!el.dataset.isMixed && Math.abs(x - rect.width/2) < rect.width/5) {
-                        el.style.backgroundColor = "black";
-                        el.dataset.isMixed = "true";
-                        mixedCount++;
-                        document.getElementById("mix-status").textContent = "MIX_STATUS: " + mixedCount + " / 10";
-                        if (mixedCount >= 10) setTimeout(initStage3, 1000);
-                    }
-                };
-            }
+            };
+        }
 
-            function initStage3() {
-                stage2.classList.remove("active");
-                stage3.classList.add("active");
-                stage3.innerHTML = '<div class="text-header-container"><h2>STAGE 3: VASODILATION</h2></div><div id="heat-profiles" style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;"><div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div></div><p>PRESS SPACE REPEATEDLY</p><p id="heat-level">HEAT_LEVEL: 0%</p>';
-                let presses = 0;
-                const spaceHandler = (e) => {
-                    if (e.code === "Space") {
-                        presses++;
-                        const pct = Math.min(100, (presses / 30) * 100);
-                        document.getElementById("heat-level").textContent = "HEAT_LEVEL: " + Math.round(pct) + "%";
-                        document.getElementById("heat-overlay").style.backgroundColor = "rgba(0, 0, 0, " + (pct/100) + ")";
-                        if (presses >= 30) {
-                            document.removeEventListener("keydown", spaceHandler);
-                            const formula = "C43H66N12O12S2";
-                            stage3.innerHTML = '<div class="text-header-container"><h3>SYNTHESIS: OXYTOCIN</h3><p>REQ: ' + formula + '</p></div><input type="text" id="oxy-input" style="padding:10px; border:2px solid black; width:300px;"><p>MATCH TEXT EXACTLY</p>';
-                            const input = document.getElementById("oxy-input");
-                            input.focus();
-                            input.oninput = (e) => { if (e.target.value.toUpperCase() === formula) document.getElementById("conclusion").classList.add("active"); stage3.classList.remove("active"); document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>"; };
-                        }
+        function initStage3() {
+            stage2.classList.remove("active");
+            stage3.classList.add("active");
+            stage3.innerHTML = `
+                <div class="text-header-container"><h2>STAGE 3: VASODILATION</h2></div>
+                <div id="heat-profiles" style="width:400px; height:150px; background:white; margin:20px 0; border:2px solid black; position:relative;">
+                    <div id="heat-overlay" style="position:absolute; top:0; left:0; width:100%; height:100%; transition:background 0.1s;"></div>
+                </div>
+                <p>PRESS SPACE REPEATEDLY</p>
+                <p id="heat-level">HEAT_LEVEL: 0%</p>`;
+            let presses = 0;
+            const spaceHandler = (e) => {
+                if (e.code === "Space") {
+                    presses++;
+                    const pct = Math.min(100, (presses / 30) * 100);
+                    document.getElementById("heat-level").textContent = "HEAT_LEVEL: " + Math.round(pct) + "%";
+                    document.getElementById("heat-overlay").style.backgroundColor = "rgba(0, 0, 0, " + (pct/100) + ")";
+                    if (presses >= 30) {
+                        document.removeEventListener("keydown", spaceHandler);
+                        goToOxytocin();
                     }
-                };
-                document.addEventListener("keydown", spaceHandler);
-            }
-            initStage1();
-        `;
+                }
+            };
+            document.addEventListener("keydown", spaceHandler);
+        }
+
+        function goToOxytocin() {
+            const formula = "C43H66N12O12S2";
+            stage3.innerHTML = `
+                <div class="text-header-container">
+                    <h3>SYNTHESIS: OXYTOCIN</h3>
+                    <p>REQ: ${formula}</p>
+                </div>
+                <input type="text" id="oxy-input" style="padding:10px; border:2px solid black; width:300px; font-family: 'Source Code Pro', monospace;">
+                <p>MATCH TEXT EXACTLY</p>`;
+            const input = document.getElementById("oxy-input");
+            input.focus();
+            input.oninput = (e) => {
+                if (e.target.value.toUpperCase() === formula) {
+                    document.getElementById("conclusion").classList.add("active");
+                    stage3.classList.remove("active");
+                    document.getElementById("conclusion").innerHTML = "<h1>PROCESS_COMPLETE</h1>";
+                }
+            };
+        }
+
+        initStage1();
     </script>
 </body>
 </html>
