@@ -25,7 +25,7 @@
             body {
                 width: 100vw; height: 100vh;
                 display: flex; justify-content: center; align-items: center;
-                margin: 0; background-color: #111; color: white;
+                margin: 0; background-color: white; color: #111;
                 font-family: 'Arial', sans-serif; overflow: hidden; box-sizing: border-box;
             }
             #game-container { width: 100%; height: 100%; position: relative; }
@@ -43,13 +43,19 @@
             }
             .profile-wrapper {
                 position: relative; width: 35vw; height: 65vh; 
-                filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+                filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.1));
             }
             .profile-image { width: 100%; height: 100%; object-fit: contain; }
             
+            /* RADAR PULSE ANIMATIONS */
             @keyframes radial-pulse {
                 0% { transform: translate(-50%, -50%) scale(0.1); opacity: 0.9; }
                 100% { transform: translate(-50%, -50%) scale(2.0); opacity: 0; }
+            }
+
+            @keyframes player-ripple {
+                0% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; border-width: 4px; }
+                100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; border-width: 1px; }
             }
 
             @keyframes approach-circle {
@@ -58,6 +64,7 @@
                 100% { transform: translate(-50%, -50%) scale(0.1); opacity: 1; }
             }
 
+            /* TARGET RINGS */
             .profile-wrapper.target::before, .profile-wrapper.target::after {
                 content: ''; position: absolute; top: 50%; left: 50%;
                 width: 100%; height: 100%; border-radius: 50%;
@@ -68,45 +75,39 @@
 
             .approach-ring {
                 position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
-                border-radius: 50%; border: 1px dashed rgba(255, 255, 255, 0.5);
+                border-radius: 50%; border: 2px dashed rgba(0, 0, 0, 0.2);
                 animation: approach-circle 2s linear infinite; z-index: -1;
             }
 
-            @keyframes playerFlash {
-                0% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
-                50% { box-shadow: 0 0 20px 5px #00ffc8; } 
-                100% { box-shadow: 0 0 0 rgba(0, 255, 200, 0); }
+            /* PLAYER RIPPLE ELEMENT */
+            #player-ripple-fx {
+                position: absolute; top: 50%; left: 50%; width: 100%; height: 100%;
+                border-radius: 50%; border: 2px solid #00ffc8;
+                transform: translate(-50%, -50%) scale(0.1);
+                opacity: 0; pointer-events: none; z-index: -1;
             }
-            #player-profile.flash { animation: playerFlash 0.2s ease-out; }
+            .ripple-active { animation: player-ripple 0.4s ease-out; }
 
             #judgment-text {
                 font-size: 2.5em; font-weight: bold; height: 1.2em; margin-bottom: 10px;
-                text-shadow: 0 0 10px rgba(255,255,255,0.5);
+                text-shadow: 0 0 5px rgba(0,0,0,0.1);
             }
-            #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; }
+            #sync-message { font-size: 1.2em; margin-bottom: 10px; opacity: 0.7; color: #555; }
+            #score-display { color: #333; }
 
-            /* MICROBE STYLES */
+            /* STAGE 2 & 3 ADJUSTMENTS */
             #microbe-container {
                 width: 80%; max-width: 600px; aspect-ratio: 16 / 9; 
-                border: 2px solid #5a5a5a; position: relative; background-color: #000033; 
+                border: 2px solid #ccc; position: relative; background-color: #f9f9f9; 
                 margin-top: 20px;
-            }
-            .microbe {
-                width: 20px; height: 20px; border-radius: 50%; position: absolute;
-                cursor: grab; transition: background-color 0.5s; opacity: 0.9;
             }
             .microbe.red { background-color: #ff6347; }
             .microbe.blue { background-color: #4682b4; }
-
-            /* STAGE 3 HEAT */
             #heat-profiles {
                 width: 400px; height: 150px; max-width: 90%; position: relative;
-                background-color: #333; margin: 20px 0;
+                background-color: #eee; margin: 20px 0; border: 1px solid #ccc;
             }
-            .heat-overlay {
-                position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-                background-color: rgba(255, 69, 0, 0); transition: background-color 0.1s;
-            }
+            input[type="text"] { border: 2px solid #333; border-radius: 5px; }
         `;
 
         // --- INJECTING JAVASCRIPT CONTENT ---
@@ -127,10 +128,11 @@
                     stage1.innerHTML = \`
                         <h2>Stage 1: Neural Synchronization</h2>
                         <div id="judgment-text"></div>
-                        <p id="sync-message">Click when the white ring shrinks to the center!</p>
+                        <p id="sync-message">Click when the gray ring shrinks to the center!</p>
                         <div id="profiles-container">
                             <div class="profile-wrapper" id="player-profile">
                                 <img src="player_profile.png" alt="Player" class="profile-image">
+                                <div id="player-ripple-fx"></div>
                             </div>
                             <div class="profile-wrapper target" id="target-profile">
                                 <img src="target_profile.png" alt="Target" class="profile-image">
@@ -153,20 +155,21 @@
                     
                     const judgment = document.getElementById('judgment-text');
                     const scoreDisplay = document.getElementById('score-display');
-                    const playerProfile = document.getElementById('player-profile');
+                    const ripple = document.getElementById('player-ripple-fx');
 
-                    playerProfile.classList.remove('flash');
-                    void playerProfile.offsetWidth; 
-                    playerProfile.classList.add('flash');
+                    // Trigger Player Ripple
+                    ripple.classList.remove('ripple-active');
+                    void ripple.offsetWidth; 
+                    ripple.classList.add('ripple-active');
 
                     if (diff <= perfectThreshold) {
                         playerClicks.push('synced');
                         judgment.textContent = "PERFECT!";
-                        judgment.style.color = "#00ffc8";
+                        judgment.style.color = "#00cc99";
                     } else if (diff <= goodThreshold) {
                         playerClicks.push('synced');
                         judgment.textContent = "GREAT!";
-                        judgment.style.color = "#ffdd00";
+                        judgment.style.color = "#ffbb00";
                     } else {
                         playerClicks = []; 
                         judgment.textContent = timeSinceLastBeat > 1000 ? "TOO EARLY" : "TOO LATE";
@@ -178,7 +181,7 @@
                     if (playerClicks.length >= 5) {
                         document.removeEventListener('click', handleSyncClick);
                         judgment.textContent = "SYNCHRONIZED!";
-                        judgment.style.color = "white";
+                        judgment.style.color = "#111";
                         setTimeout(() => {
                             stage1.classList.remove('active');
                             stage2.classList.add('active');
@@ -188,12 +191,12 @@
                 }
 
                 function initStage2() {
-                    stage2.innerHTML = \`<h2>Stage 2: Microbial Exchange</h2><p>The profiles approach...</p><div id="zoom-bullseye" style="padding:20px; background:orange; cursor:pointer; border-radius:10px;">ZOOM IN</div>\`;
+                    stage2.innerHTML = \`<h2>Stage 2: Microbial Exchange</h2><p>The profiles approach...</p><div id="zoom-bullseye" style="padding:20px; background:#ff477e; color:white; cursor:pointer; border-radius:10px; font-weight:bold;">ZOOM IN</div>\`;
                     document.getElementById('zoom-bullseye').onclick = renderMicrobeView;
                 }
 
                 function renderMicrobeView() {
-                    stage2.innerHTML = \`<h3>Mixing Microbiota (Drag to Center)</h3><div id="microbe-container"></div><p id="mix-status">Mixed: 0 / 10</p>\`;
+                    stage2.innerHTML = \`<h3>Mixing Microbiota (Drag to Center)</h3><div id="microbe-container"></div><p id="mix-status" style="color:#111;">Mixed: 0 / 10</p>\`;
                     const container = document.getElementById('microbe-container');
                     let mixedCount = 0;
                     for (let i = 0; i < 20; i++) {
@@ -248,14 +251,14 @@
 
                 function goToOxytocin() {
                     const formula = 'C43H66N12O12S2';
-                    stage3.innerHTML = \`<h3>Synthesis: Oxytocin</h3><p>Type the formula to release: <br><strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; font-size:1.2em; text-align:center;"><p id="oxy-status">Match the text exactly!</p>\`;
+                    stage3.innerHTML = \`<h3>Synthesis: Oxytocin</h3><p>Type the formula to release: <br><strong>\${formula}</strong></p><input type="text" id="oxy-input" style="padding:10px; font-size:1.2em; text-align:center;"><p id="oxy-status" style="color:#555;">Match the text exactly!</p>\`;
                     const input = document.getElementById('oxy-input');
                     input.focus();
                     input.oninput = (e) => {
                         if (e.target.value.toUpperCase() === formula) {
                             stage3.classList.remove('active');
                             conclusion.classList.add('active');
-                            conclusion.innerHTML = "<h1>OXYTOCIN RELEASED!<br>YOU ARE IN LOVE!</h1>";
+                            conclusion.innerHTML = "<h1 style='color:#ff477e;'>OXYTOCIN RELEASED!<br>YOU ARE IN LOVE!</h1>";
                         }
                     };
                 }
