@@ -66,8 +66,8 @@
         .ripple-active { animation: radial-pulse 4s linear forwards; }
 
         #three-container { width: 100%; height: 450px; margin-top: 20px; border: 2px solid black; background: white; position: relative;}
-        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: black; background: rgba(255,255,255,0.8); padding: 10px; border: 1px solid black; font-size: 0.8em; pointer-events: none; }
-        #zoom-bar-container { width: 100%; height: 4px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
+        #zoom-ui { position: absolute; bottom: 20px; right: 20px; color: black; background: rgba(255,255,255,0.9); padding: 10px; border: 1px solid black; font-size: 0.8em; pointer-events: none; z-index: 100;}
+        #zoom-bar-container { width: 120px; height: 4px; background: #eee; margin-top: 10px; border: 1px solid #ddd; }
         #zoom-bar-fill { width: 0%; height: 100%; background: #fbcce7; transition: width 0.1s; }
 
         #microbe-container { width: 80%; max-width: 600px; aspect-ratio: 16/9; border: 2px solid black; position: relative; background: white; margin-top: 20px; overflow: hidden; }
@@ -166,7 +166,7 @@
             stage2.innerHTML = `
                 <div class="text-header-container">
                     <h3>ANATOMICAL_MAP: SMALL_INTESTINE</h3>
-                    <p style="font-size:0.8em; opacity:0.7;">USE UP ARROW TO DIVE DEEPER INTO TISSUE</p>
+                    <p style="font-size:0.8em; opacity:0.7;">HOLD UP ARROW TO DIVE THROUGH THE MODEL</p>
                 </div>
                 <div id="three-container">
                     <div id="zoom-ui">
@@ -177,43 +177,43 @@
             const container = document.getElementById("three-container");
             
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xffffff); // White background
-            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.01, 1000);
+            scene.background = new THREE.Color(0xffffff);
+            const camera = new THREE.PerspectiveCamera(60, container.clientWidth / container.clientHeight, 0.1, 2000);
             const renderer = new THREE.WebGLRenderer({ antialias: true });
             renderer.setSize(container.clientWidth, container.clientHeight);
             container.appendChild(renderer.domElement);
 
-            // Boosted Interior Lighting
-            const ambient = new THREE.AmbientLight(0xffffff, 2.0); 
+            const ambient = new THREE.AmbientLight(0xffffff, 2.5); 
             scene.add(ambient);
-            const internalLight = new THREE.PointLight(0xffffff, 5);
-            internalLight.position.set(0, 0, 0);
-            scene.add(internalLight);
+            const light = new THREE.PointLight(0xffffff, 10);
+            scene.add(light);
 
             const loader = new GLTFLoader();
             loader.load('SMALL_INTESTINE.glb', (gltf) => {
                 const model = gltf.scene;
+                
+                // Auto-Center and Auto-Scale
                 const box = new THREE.Box3().setFromObject(model);
+                const size = box.getSize(new THREE.Vector3());
                 const center = box.getCenter(new THREE.Vector3());
                 model.position.sub(center);
                 
-                // Rotated to your specified 165 degrees (90 + 75)
+                // Apply your 165 degree rotation
                 model.rotation.y = (165 * Math.PI / 180); 
-                
                 scene.add(model);
-                
-                // Start camera ALMOST at the center to appear "inside"
-                let currentZoom = 0.5;
-                const startZoom = 0.5;
-                const targetZoom = -1.5; // Moving forward through the model
+
+                // Dynamically set zoom bounds based on the model size
+                let startZ = size.z * 0.8;
+                let endZ = -size.z * 0.8;
+                let currentZoom = startZ;
 
                 function updateZoom(delta) {
                     currentZoom += delta;
-                    const progress = Math.abs((currentZoom - startZoom) / (targetZoom - startZoom)) * 100;
+                    const progress = Math.abs((currentZoom - startZ) / (endZ - startZ)) * 100;
                     const fill = document.getElementById("zoom-bar-fill");
                     if(fill) fill.style.width = Math.min(100, progress) + "%";
 
-                    if (currentZoom <= targetZoom) {
+                    if (currentZoom <= endZ) {
                         window.removeEventListener("keydown", handleKeyZoom);
                         renderer.dispose();
                         renderMicrobeView();
@@ -221,18 +221,18 @@
                 }
 
                 function handleKeyZoom(e) {
-                    if (e.key === "ArrowUp") updateZoom(-0.02);
-                    if (e.key === "ArrowDown") updateZoom(0.02);
+                    if (e.key === "ArrowUp") updateZoom(- (size.z / 100)); // Moves forward relative to size
+                    if (e.key === "ArrowDown") updateZoom(size.z / 100);
                 }
 
                 window.addEventListener("keydown", handleKeyZoom);
+                camera.position.z = startZ;
 
                 function animate() {
                     if (!stage2.classList.contains("active")) return;
                     requestAnimationFrame(animate);
                     camera.position.z = currentZoom;
-                    // Keep light moving with camera
-                    internalLight.position.z = currentZoom;
+                    light.position.copy(camera.position); // Light follows camera
                     renderer.render(scene, camera);
                 }
                 animate();
